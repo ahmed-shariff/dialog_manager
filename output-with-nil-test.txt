@@ -1,0 +1,60 @@
+
+
+
+****Calculating accuracy for utterences****
+
+New run
+Accuracy of trigger functions: 9/19    returned values: (9 19)
+Accuracy of response functions: 13/19  returned values: (13 19)
+
+
+New run
+Accuracy of trigger functions: 9/20    returned values: (9 20)
+Accuracy of response functions: 3/4  returned values: (15 20)
+
+
+New run
+Accuracy of trigger functions: 2/3    returned values: (4 6)
+Accuracy of response functions: 2/3  returned values: (4 6)
+
+
+New run
+Accuracy of trigger functions: 1/2    returned values: (10 20)
+Accuracy of response functions: 17/20  returned values: (17 20)
+
+
+New run
+Accuracy of trigger functions: 9/19    returned values: (9 19)
+Accuracy of response functions: 14/19  returned values: (14 19)
+
+
+FINAL VALUES:
+trigger function average accuracy:  0.512807
+response function average accuracy:  0.7368421
+
+
+****Calculating accuracy for conversations****
+
+New run
+Accuracy of trigger functions: 3/4
+Accuracy of response functions: 1
+
+New run
+Accuracy of trigger functions: 4/9
+Accuracy of response functions: 1
+
+New run
+Accuracy of trigger functions: 1
+Accuracy of response functions: 1
+
+New run
+Accuracy of trigger functions: 2/3
+Accuracy of response functions: 1
+
+New run
+Accuracy of trigger functions: 1/2
+Accuracy of response functions: 1
+
+FINAL VALUES:
+trigger function average accuracy:  0.6722222
+response function average accuracy:  1.0

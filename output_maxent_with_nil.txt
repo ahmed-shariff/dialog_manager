@@ -1,0 +1,80 @@
+
+
+
+****Calculating accuracy for utterences****
+
+*********Training with Maxent model*********
+New run
+Accuracy of trigger functions: 13/21    returned values: (13 21)
+Accuracy of response functions: 5/7  returned values: (15 21)
+
+
+*********Training with Maxent model*********
+New run
+Accuracy of trigger functions: 13/21    returned values: (13 21)
+Accuracy of response functions: 17/21  returned values: (17 21)
+
+
+*********Training with Maxent model*********
+New run
+Accuracy of trigger functions: 11/19    returned values: (11 19)
+Accuracy of response functions: 18/19  returned values: (18 19)
+
+
+*********Training with Maxent model*********
+New run
+Accuracy of trigger functions: 8/21    returned values: (8 21)
+Accuracy of response functions: 20/21  returned values: (20 21)
+
+
+*********Training with Maxent model*********
+New run
+Accuracy of trigger functions: 10/21    returned values: (10 21)
+Accuracy of response functions: 16/21  returned values: (16 21)
+
+
+FINAL VALUES:
+trigger function average accuracy:  0.53483707
+response function average accuracy:  0.7619048
+
+
+****Calculating accuracy for conversations****
+
+*********Training with Maxent model*********
+
+
+New run
+Accuracy of trigger functions: 16/19
+Accuracy of response functions: 1
+
+*********Training with Maxent model*********
+
+
+New run
+Accuracy of trigger functions: 16/19
+Accuracy of response functions: 1
+
+*********Training with Maxent model*********
+
+
+New run
+Accuracy of trigger functions: 1
+Accuracy of response functions: 1
+
+*********Training with Maxent model*********
+
+
+New run
+Accuracy of trigger functions: 12/19
+Accuracy of response functions: 1
+
+*********Training with Maxent model*********
+
+
+New run
+Accuracy of trigger functions: 1
+Accuracy of response functions: 1
+
+FINAL VALUES:
+trigger function average accuracy:  0.86315787
+response function average accuracy:  1.0

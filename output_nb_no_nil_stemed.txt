@@ -1,0 +1,80 @@
+
+
+
+****Calculating accuracy for utterences****
+
+*********Training with Naive-bayes model*********
+New run
+Accuracy of trigger functions: 11/21    returned values: (11 21)
+Accuracy of response functions: 13/21  returned values: (13 21)
+
+
+*********Training with Naive-bayes model*********
+New run
+Accuracy of trigger functions: 11/21    returned values: (11 21)
+Accuracy of response functions: 17/21  returned values: (17 21)
+
+
+*********Training with Naive-bayes model*********
+New run
+Accuracy of trigger functions: 10/19    returned values: (10 19)
+Accuracy of response functions: 15/19  returned values: (15 19)
+
+
+*********Training with Naive-bayes model*********
+New run
+Accuracy of trigger functions: 10/21    returned values: (10 21)
+Accuracy of response functions: 5/7  returned values: (15 21)
+
+
+*********Training with Naive-bayes model*********
+New run
+Accuracy of trigger functions: 11/21    returned values: (11 21)
+Accuracy of response functions: 5/7  returned values: (15 21)
+
+
+FINAL VALUES:
+trigger function average accuracy:  0.51478696
+response function average accuracy:  0.71428573
+
+
+****Calculating accuracy for conversations****
+
+*********Training with naive-bayes model*********
+
+
+New run
+Accuracy of trigger functions: 12/17
+Accuracy of response functions: 1
+
+*********Training with naive-bayes model*********
+
+
+New run
+Accuracy of trigger functions: 3/4
+Accuracy of response functions: 1
+
+*********Training with naive-bayes model*********
+
+
+New run
+Accuracy of trigger functions: 9/11
+Accuracy of response functions: 1
+
+*********Training with naive-bayes model*********
+
+
+New run
+Accuracy of trigger functions: 4/7
+Accuracy of response functions: 1
+
+*********Training with naive-bayes model*********
+
+
+New run
+Accuracy of trigger functions: 10/17
+Accuracy of response functions: 1
+
+FINAL VALUES:
+trigger function average accuracy:  0.6867456
+response function average accuracy:  1.0
