@@ -195,6 +195,10 @@ term which gives the total number of that term in that class"
 
 (burgled-batteries:startup-python)
 (burgled-batteries:run "import pyModule.ME_class as t")
+(burgled-batteries:run "from importlib import util")
+
+
+
 ;(burgled-batteries:run "import pyModule.ME_test as test")
 ;(burgled-batteries:defpyfun "test.xx" (y))
 (burgled-batteries:defpyfun "t.get_maxent_list" (fset-dict model-name))
@@ -350,6 +354,6 @@ term which gives the total number of that term in that class"
 ;; 	(fout "m.save(\"test_model\")")))))
 	
     
-    ;(burgled-batteries:shutdown-python)))
+;(burgled-batteries:shutdown-python)))
 	    
  

@@ -2,6 +2,8 @@
 *.pickle
 nil_model.*
 trigger_model.*
+.\#*
+\#*
 
 #
 *.FASL
