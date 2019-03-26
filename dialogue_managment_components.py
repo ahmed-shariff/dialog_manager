@@ -24,7 +24,10 @@ class ContextObject():
         self.id = id
         self.type = type
         self.function = function
-        self.state = ContextObjectStates.UNRESOLVED
+        if type in (ContextObjectTypes.SYSTEM_RESPONSE, ContextObjectTypes.USER_CONCERN):
+            self.state = ContextObjectStates.RESOLVED
+        else:
+            self.state = ContextObjectStates.UNRESOLVED
         self.context = []
 
     def add_context(self, context):
@@ -38,11 +41,21 @@ class ContextObject():
         self.state = ContextObjectStates.RESOLVED
         # TODO: execute function when resolved
 
+class Function():
+    def __init__(self, function_name, function, parameters = None):
+        self.name = function_name
+        self.function = function
+        if parameters is not None:
+            self.parameters = {name:Function(name, func) for name, func in parameters.items()}
+        else:
+            self.parameters = None
+            
 class Context():
-    def __init__(self):
+    def __init__(self, function_index):
         self.root = ContextObject("ROOT", 0, ContextObjectTypes.SYSTEM_CONCERN)
         self.current_id = 1
         self.all_system_concerns_id_map = {"ROOT": 0} # name:id map
+        self.function_index = function_index
         
     def get_active_concerns(self):
         def _get_active_concerns(current_concern, concerns, active_concerns):
@@ -70,22 +83,77 @@ class Context():
                                        else ContextObjectTypes.USER_RESPONSE)
 
         for trigger_function in trigger_functions:
-            trigger_context_object = self.add_system_context_object(self, trigger_function)
+            trigger_context_object = self.add_system_concern_context_object(self, trigger_function)
             context_object.add_context(trigger_context_object)
         
         for idx in function_name_list_to_id_list(response_functions):
             active_concerns[idx].add_context(context_object)
 
         return context_object
+
+    def create_system_concern_context_object(self, function_name):
+        function = self.function_index[function_name]
+        context_object = ContextObject(function_name,
+                                       self._get_id(),
+                                       ContextObjectTypes.SYSTEM_CONCERN,
+                                       function)
+        try:
+            for name, func in function.parameters.items():
+                context_object.add_context(ContextObject(name,
+                                                         self._get_id(),
+                                                         ContextObjectTypes.SYSTEM_CONCERN,
+                                                         func))
+        except:
+            pass
+        return context_object
+
+    def process_context(self):
+        # returns true if all the child concerns and itself is resolved
+        # check if all child concerns are resolved.
+        # TODO        
+    def _check_children(self, context_obj):
+        '''
+        Return True if all children have been marked as resolved.
+        '''
+        for child_context_obj in context_obj.context:
+            if child_context_obj.state == ContextObjectStates.UNRESOLVED:
+                return False
+        return True
+    
+    def resolve_concern(self, context_obj):
+        '''
+        Return True if concern is/was succesflully resolved.
+        '''
+        if context_obj.state == ContextObjectStates.RESOLVED:
+            return True
+        if self._check_children(context_obj):
+            if context_obj.function is not None:
+                exec_success, outputs = self.function_resolver.resolve(function, context_obj.context)
+                if not exec_success:
+                    # Rethink this. If the context does not have the expected results in the resolved context, what happens!
+                    #return False
+                    raise NotImplementedError("")
+                else:
+                    for output in outputs:
+                        context_obj.add_context(ContextObject(output,
+                                                              self._get_id(),
+                                                              ContextObjectTypes.SYSTEM_RESPONSE,
+                                                              None))
+                        
+            context_obj.state = ContextObjectStates.RESOLVED
+            return True
+        else:
+            return False
         
     def function_name_list_to_id_list(self, name_list):
         return [self.all_system_concerns_id_map[name] for name in name_list]
 
 class Dialogue_Manager():
-    def __init__(self, response_function_model, trigger_function_model):
+    def __init__(self, response_function_model, trigger_function_model, function_index):
         self.context = Context()
         self.response_function_model = response_function_model
         self.trigger_function_model = trigger_function_model
+        self.function_index = function_index
 
     def process_user_utterance(self, utterance):
         # Get the predicted response and trigger functions
