@@ -10,6 +10,15 @@ class ContextObjectTypes(Enum):
     SYSTEM_CONCERN = 3
     SYSTEM_RESPONSE = 4
 
+class FunctionResolverBase():
+    def resolve(self, function, context):
+        '''
+        should take two parameters: function (A Function object), and the context (a list of ContextObjects)
+        Ideally will execute the function.
+        The return values are: exit_code (if the execution was a sucess), the output of the function.        
+        '''
+        raise NotImplemented
+    
 class ContextObject():
     def __init__(self, name, id, type, function = None):
         '''
@@ -51,13 +60,31 @@ class Function():
             self.parameters = None
             
 class Context():
-    def __init__(self, function_index):
+    def __init__(self, function_index, function_resolver):
         self.root = ContextObject("ROOT", 0, ContextObjectTypes.SYSTEM_CONCERN)
         self.current_id = 1
         self.all_system_concerns_id_map = {"ROOT": 0} # name:id map
         self.function_index = function_index
+        self.function_resolver = function_resolver
+
+    def _get_id(self):
+        return_id = self.current_id
+        self.current_id = self.current_id + 1
+        return return_id
+    
+    def _check_children(self, context_obj):
+        '''
+        Return True if all children have been marked as resolved.
+        '''
+        for child_context_obj in context_obj.context:
+            if child_context_obj.state == ContextObjectStates.UNRESOLVED:
+                return False
+        return True
         
     def get_active_concerns(self):
+        '''
+        Traverses throught the tree and list all the unresolved concerns.
+        '''
         def _get_active_concerns(current_concern, concerns, active_concerns):
             if current_concern.state == ContextObjectStates.UNRESOLVED:
                 active_concerns[current_concern.id] = current_concern
@@ -70,11 +97,6 @@ class Context():
 
         return _get_active_concerns(self.root, [], {})
 
-    def _get_id(self):
-        return_id = self.current_id
-        self.current_id = self.current_id + 1
-        return return_id
-    
     def add_user_context_object(self, utterance, response_functions, trigger_functions):
         active_concerns = self.get_active_concerns()
         context_object = ContextObject(utterance,
@@ -110,15 +132,20 @@ class Context():
     def process_context(self):
         # returns true if all the child concerns and itself is resolved
         # check if all child concerns are resolved.
-        # TODO        
-    def _check_children(self, context_obj):
-        '''
-        Return True if all children have been marked as resolved.
-        '''
-        for child_context_obj in context_obj.context:
-            if child_context_obj.state == ContextObjectStates.UNRESOLVED:
-                return False
-        return True
+        # TODO
+        def _process_context(context_objs):
+            if len(context_objs) == 0:
+                return True
+            current_context_obj = context_objs[0]
+            context_objs = context_objs[1:]
+            if current_context_obj.state == ContextObjectStates.RESOLVED:
+                return True
+            else:
+                # only concerns can be marked as UNRESOLVED, so I can assume it's a concern that comes here.
+                _process_context(current_context_obj.context)
+                self.resolve_concern(current_context_obj)
+                _process_context(context_objs)
+        _process_context([self.root])
     
     def resolve_concern(self, context_obj):
         '''
@@ -128,7 +155,8 @@ class Context():
             return True
         if self._check_children(context_obj):
             if context_obj.function is not None:
-                exec_success, outputs = self.function_resolver.resolve(function, context_obj.context)
+                # the function resolver to basically outsource how the function is resolved.
+                exec_success, outputs = self.function_resolver.resolve(context_obj.function, context_obj.context)
                 if not exec_success:
                     # Rethink this. If the context does not have the expected results in the resolved context, what happens!
                     #return False
