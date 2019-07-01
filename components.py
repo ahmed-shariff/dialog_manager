@@ -1,14 +1,17 @@
 from enum import Enum
 
+
 class ContextObjectStates(Enum):
     RESOLVED = 1
     UNRESOLVED = 2
+
 
 class ContextObjectTypes(Enum):
     USER_CONCERN = 1
     USER_RESPONSE = 2
     SYSTEM_CONCERN = 3
     SYSTEM_RESPONSE = 4
+
 
 class FunctionResolverBase():
     def resolve(self, function, context):
@@ -18,7 +21,8 @@ class FunctionResolverBase():
         The return values are: exit_code (if the execution was a sucess), the output of the function.        
         '''
         raise NotImplemented
-    
+
+
 class ContextObject():
     def __init__(self, name, id, type, function = None):
         '''
@@ -50,20 +54,22 @@ class ContextObject():
         self.state = ContextObjectStates.RESOLVED
         # TODO: execute function when resolved
 
+
 class Function():
-    def __init__(self, function_name, function, parameters = None):
+    def __init__(self, function_name, function, parameters=None):
         self.name = function_name
         self.function = function
         if parameters is not None:
-            self.parameters = {name:Function(name, func) for name, func in parameters.items()}
+            self.parameters = {name: Function(name, func) for name, func in parameters.items()}
         else:
             self.parameters = None
-            
+
+
 class Context():
     def __init__(self, function_index, function_resolver):
         self.root = ContextObject("ROOT", 0, ContextObjectTypes.SYSTEM_CONCERN)
         self.current_id = 1
-        self.all_system_concerns_id_map = {"ROOT": 0} # name:id map
+        self.all_system_concerns_id_map = {"ROOT": 0}  # name:id map
         self.function_index = function_index
         self.function_resolver = function_resolver
 
@@ -71,7 +77,7 @@ class Context():
         return_id = self.current_id
         self.current_id = self.current_id + 1
         return return_id
-    
+
     def _check_children(self, context_obj):
         '''
         Return True if all children have been marked as resolved.
@@ -167,14 +173,15 @@ class Context():
                                                               self._get_id(),
                                                               ContextObjectTypes.SYSTEM_RESPONSE,
                                                               None))
-                        
+
             context_obj.state = ContextObjectStates.RESOLVED
             return True
         else:
             return False
-        
+
     def function_name_list_to_id_list(self, name_list):
         return [self.all_system_concerns_id_map[name] for name in name_list]
+
 
 class Dialogue_Manager():
     def __init__(self, response_function_model, trigger_function_model, function_index):
@@ -189,7 +196,7 @@ class Dialogue_Manager():
         trigger_functions = self._get_trigger_functions(utterance)
 
         isConcern = len(trigger_functions) > 0
-        
+
     def _get_trigger_functions(self, utterance):
         '''
         This function processes the utterance using the trigger_function_model and does any other 
@@ -198,14 +205,14 @@ class Dialogue_Manager():
         '''
         # Models output
         trigger_functions = self.trigger_function_model(utterance)
-        
+
         if len(trigger_functions) == 0:
             return []
         else:
             # For now, the model only returns the top result
             # TODO: extend this to return more than one function when appropriate
             max_prob = max(trigger_functions_reversed.values())
-            return [n for n,p in trigger_functions.items() if p == max_prob]
+            return [n for n, p in trigger_functions.items() if p == max_prob]
 
     def _get_response_function(self, utterance):
         '''
@@ -217,12 +224,12 @@ class Dialogue_Manager():
         active_concerns = self.context.get_active_concerns()
 
         # Filter the trigger functions based on the active concerns
-        response_functions = {n:p for n,p in response_functions.items() if n in active_concerns}
+        response_functions = {n: p for n, p in response_functions.items() if n in active_concerns}
 
         if len(response_functions) == 0:
             raise DialogueProcessingException("No response functions")
-        return [n for n,p in response_functions.items()]
-    
+        return [n for n, p in response_functions.items()]
+
 
 class DialogueProcessingException(Exception):
     pass
