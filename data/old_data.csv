@@ -1,0 +1,103 @@
+Can i book a train,book-train,root-concern
+It's ahmed shariff,nil,book-train-name
+from kandy,nil,book-train-departure
+to colombo,nil,book-train-destination
+5 tickets please,nil,book-train-number-of-tickets
+I would like to book a ticket,book-train,root-concern
+my name is pual aron,nil,book-train-name
+i would be leaving from colombo,nil,book-train-departure
+i am going to kandy,nil,book-train-destination
+just 1 thank you,nil,book-train-number-of-tickets
+i want to book a ticket,book-train,root-concern
+diago luna,nil,book-train-name
+from dhambulla,nil,book-train-departure
+to jafna,nil,book-train-destination
+2 tickets please,nil,book-train-number-of-tickets
+can you please help me to book a train,book-train,root-concern
+i am bhashithe abesinghe,nil,book-train-name
+colombo fort,nil,book-train-departure
+i am getting off from maradhana,nil,book-train-destination
+three,nil,book-train-number-of-tickets
+i need to book a train,book-train,root-concern
+my name is roshan mahanama,nil,book-train-name
+from dhambulla,nil,book-train-departure
+colombo,nil,book-train-destination
+just one ticket,nil,book-train-number-of-tickets
+I'd like to order a taxi,order-taxi,root-concern
+at kandy,nil,order-taxi-location
+can you send me a taxi,order-taxi,root-concern
+send it to colombo,nil,order-taxi-location
+i need a cab,order-taxi,root-concern
+to maradhana,nil,order-taxi-location
+i want a cab,order-taxi,root-concern
+i'll have it at dhambulla,nil,order-taxi-location
+I'd like to know the train schedules,get-train-info,root-concern
+I want to go from colombo,nil,get-train-info-departure
+to kandy,nil,get-train-info-destination
+I want to know the train times,get-train-info,root-concern
+I would be leaving from dhambulla,nil,get-train-info-departure
+I am going to maradhana,nil,get-train-info-destination
+I want to get the train shedules,get-train-info,root-concern
+moving from maradhana,nil,get-train-info-destination
+I want to know the times of the trains to kandy,nil,get-train-info-destination
+I want to know the shedules of the train nleaving from kandy,get-train-info,root-concern
+from kandy,nil,get-train-info-destination
+I am looking for trains that leave to colombo,nil,get-train-info-destination
+can i find about the trains departing time,get-train-info,root-concern
+fomr dhambulla,nil,get-train-info-destination
+kandy,nil,get-train-info-destination
+I want to order some food please,order-food,root-concern
+I would like to have pizza,nil,order-food-food-type
+Send us three pizza's  please,nil,order-food-number-of-orders
+I want some food,order-food,root-concern
+Can i have some rotti,nil,order-food-food-type
+I'll take one,nil,order-food-number-of-orders
+I would like to buy food,order-food,root-concern
+give me some bread,nil,order-food-food-type
+two please,nil,order-food-number-of-orders
+buy some food,order-food,root-concern
+give me a bun,nil,order-food-food-type
+i need just one,nil,order-food-number-of-orders
+i am looking to order some food,order-food,root-concern
+a piece of cacke will do,nil,order-food-food-type
+one,nil,order-food-number-of-orders
+I want to signup,signup-online-account,root-concern
+It's chanaka,nil,signup-online-account-name
+I'm twnty five,nil,signup-online-age
+chanaka dot gunasekara at live dot com,nil,signup-online-account-email-address
+I want to create an online account,signup-online-account,root-concern
+i am sahan,nil,signup-online-account-name
+i am twnty six years old,nil,signup-online-age
+it's sahan f fernando at gmail dot com,nil,signup-online-account-email-address
+Can i signup for an account online,signup-online-account,root-concern
+my name is kshare,nil,signup-online-account-name
+I'm twnty three,nil,signup-online-age
+kshare at hotmail dot com,nil,signup-online-account-email-address
+to create an online account,signup-online-account,root-concern
+roberta,nil,signup-online-account-name
+i am twenty one,nil,signup-online-age
+roberta underscore five five five at ymail dot com,nil,signup-online-account-email-address
+open an onilne account,signup-online-account,root-concern
+mahanama,nil,signup-online-account-name
+i am fifty two,nil,signup-online-age
+mhana one two three at live dot com,nil,signup-online-account-email-address
+I would like to book a room please,book-room,root-concern
+I am Shariff,nil,book-room-name
+For three days,nil,book-room-number-of-days
+i only need one room,nil,book-room-number-of-rooms
+I want a room please,book-room,root-concern
+It's bhashithe,nil,book-room-name
+For one night,nil,book-room-number-of-days
+I need two,nil,book-room-number-of-rooms
+i want to book a few room,book-room,root-concern
+My name is rankan,nil,book-room-name
+for one night,nil,book-room-number-of-days
+i need three rooms,nil,book-room-number-of-rooms
+I need to book a room,book-room,root-concern
+I am warren,nil,book-room-name
+i am staying for one day,nil,book-room-number-of-days
+i'll take one room,nil,book-room-number-of-rooms
+i am loking for a roomI need to book a room,book-room,root-concern
+it's mahanama,nil,book-room-name
+just one night,nil,book-room-number-of-days
+that also would be one,nil,book-room-number-of-rooms
