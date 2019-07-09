@@ -106,10 +106,10 @@ def _convert_to_json(file_path, out_file_path):
     # print(set(data[data['utterance'].apply(
     #     lambda x: isinstance(x, list))]['utterance'].apply(lambda x: x[4]).to_list()))
     print(data[data['by'] == 'user'].loc[:, ['utterance', 'trigger_functions', 'response_functions']])
-    if out_file_path is not None:
+    if out_file_path is None:
         out_file_path = file_path.replace(".txt", ".json")
     with open(out_file_path, "w") as f:
-        json.dump(data.to_json(), f)
+        json.dump(json.loads(data.to_json()), f)
 
 
 if __name__ == '__main__':
