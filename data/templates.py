@@ -152,7 +152,7 @@ cities = ['paris', 'madrid', 'bombay', 'london', 'rome']
 price = ["cheap", "moderate", "expensive"]
 values = {
     functions.book_room_city: cities,
-    functions.book_room_nights: cities,
+    functions.book_room_nights: counts,
     functions.book_room_number: counts,
     functions.book_room_price: price,
     functions.order_taxi_location: cities,
@@ -164,7 +164,6 @@ values = {
 cities = ["hanoi", "beijing", "bangkok", "seoul", "tokyo"]
 values_OOV = values.copy()
 values_OOV[functions.book_room_city] = cities
-values_OOV[functions.book_room_nights] = cities
 values_OOV[functions.order_taxi_location] = cities
 values_OOV[functions.book_ticket_from] = cities
 values_OOV[functions.book_ticket_to] = cities

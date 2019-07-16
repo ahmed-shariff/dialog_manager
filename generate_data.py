@@ -3,20 +3,23 @@ import pandas as pd
 import random
 import itertools
 import json
+from sklearn.model_selection import train_test_split
 from data.templates import (templates,
                             system_templates,
                             functions,
                             function_groups,
-                            values)
+                            values,
+                            values_OOV)
 
 pd.set_option("display.max_colwidth", 100)
+np.random.seed(100)
 
 
 def load_old_data():
     with open("data/old_data.csv") as f:
         for line in f:
             line = line.rstrip().split(",")
-            #if 'order-taxi' in line[1] or 'order-taxi' in line[2]:
+            # if 'order-taxi' in line[1] or 'order-taxi' in line[2]:
             print(line)
 
 
@@ -39,7 +42,8 @@ def generate_utterance(dialogue_id, by, turn_id, reply_to, utterance, response_f
         }
 
 
-def generate_dialogue(dialogue_id, df, trigger_function, response_functions):
+def generate_dialogue(dialogue_id, df, trigger_function, response_functions, kb):
+    kb_entry = random.choice(kb[trigger_function])
     lines = []
     completed = []
     turn_id = itertools.count(1)
@@ -54,7 +58,7 @@ def generate_dialogue(dialogue_id, df, trigger_function, response_functions):
     tf_template = df[df['trigger_functions'].apply(lambda x: x is not None and trigger_function in x)].sample(1)
     try:
         try:
-            fist_response_functions = {func: random.choice(values[func]) for func in tf_template['response_functions'].iloc[0]}
+            fist_response_functions = {func: kb_entry[func] for func in tf_template['response_functions'].iloc[0]}
         except Exception:
             fist_response_functions = {}
         lines.append(generate_utterance(
@@ -85,27 +89,54 @@ def generate_dialogue(dialogue_id, df, trigger_function, response_functions):
                 'user',
                 next(turn_id),
                 next(reply_to),
-                template['utterance'].iloc[0].format(**{func: random.choice(values[func])}),
+                template['utterance'].iloc[0].format(**{func: kb_entry[func]}),
                 [func],
                 None))
-    print(*lines, sep="\n")
+    # print(*lines, sep="\n")
     return lines
 
 
 def generate_dataset():
+    train_kb, test_kb = get_split_kb(values, 0.5)
+    test_OOV_kb, _ = get_split_kb(values_OOV, 0)
     template_df = pd.DataFrame(templates, columns=['utterance',  'trigger_functions', 'response_functions'])
     template_df.loc[:, 'response_functions_count'] = template_df['response_functions']\
                .apply(lambda x: len(x) if x is not None else np.NaN)
     dialogue_id = itertools.count(0)
-    dialogues = []
-    for trigger_function, response_functions in function_groups:
-        for _ in range(10):
-            idx = 'added_{}'.format(next(dialogue_id))
-            dialogues.extend(generate_dialogue(idx,
-                                               template_df, trigger_function, response_functions))
-    df = pd.DataFrame(dialogues)
-    with open("data/generated_dataset.json", "w") as f:
-        json.dump(json.loads(df.to_json(orient='index')), f)
+
+    def gen_dataset(kb):
+        dialogues = []
+        for trigger_function, response_functions in function_groups:
+            for _ in range(10):
+                idx = 'added_{}'.format(next(dialogue_id))
+                dialogues.extend(generate_dialogue(idx, template_df, trigger_function,
+                                                   response_functions, train_kb))
+        df = pd.DataFrame(dialogues)
+        return df
+    with open("data/generated_dataset_trn.json", "w") as f:
+        json.dump(json.loads(gen_dataset(train_kb).to_json(orient='index')), f)
+    with open("data/generated_dataset_dev.json", "w") as f:
+        json.dump(json.loads(gen_dataset(train_kb).to_json(orient='index')), f)
+    with open("data/generated_dataset_tst.json", "w") as f:
+        json.dump(json.loads(gen_dataset(test_kb).to_json(orient='index')), f)
+    with open("data/generated_dataset_tst_OOV.json", "w") as f:
+        json.dump(json.loads(gen_dataset(test_OOV_kb).to_json(orient='index')), f)
+
+
+def get_split_kb(values_dict, test_size):
+    train_kb = {}
+    test_kb = {}
+    for func in function_groups:
+        response_values = func[1]
+        values_extracted = [values_dict[rv] for rv in response_values]
+        keys_extracted = [rv for rv in response_values]
+        products = itertools.product(*values_extracted)
+        requests = [dict(zip(keys_extracted, p)) for p in products]
+        random.shuffle(requests)
+        train_set, test_set = train_test_split(requests, test_size=test_size)
+        train_kb[func[0]] = train_set
+        test_kb[func[0]] = test_set
+    return train_kb, test_kb
 
 
 if __name__ == '__main__':
