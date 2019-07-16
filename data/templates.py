@@ -1,6 +1,8 @@
 class functions:
     plurality = "plurality"
 
+    root_concern = "root_concern"
+
     order_taxi = "order_taxi"
     order_taxi_location = "order_taxi_location"
 
@@ -15,6 +17,18 @@ class functions:
     book_ticket_to = "book_ticket_to"
     book_ticket_price = "book_ticket_price"
 
+
+system_templates = {
+    functions.root_concern: "How can I help you",
+    functions.order_taxi_location: "Where would you like the taxi sent to",
+    functions.book_room_number: "How many rooms would you like to reserve",
+    functions.book_room_nights: "How many nights will you be staying for",
+    functions.book_room_price: "In what price range will you be reserving",
+    functions.book_room_city: "In which city would you like to have your rooms",
+    functions.book_ticket_from: "Where will you be traveling from",
+    functions.book_ticket_to: "Where will you be traveling to",
+    functions.book_ticket_price: "In what price range will you be reserving tickets"
+    }
 
 templates = [
     # order-taxi
@@ -45,13 +59,13 @@ templates = [
     ["i'd like to book {book_room_number[0]} room{book_room_number[1]} in a {book_room_price} price range", [functions.book_room], [functions.book_room_number, functions.book_room_price]],
     ["i'd like to book rooms for {book_room_nights[0]} night{book_room_nights[1]}", [functions.book_room], [functions.book_room_nights]],
     ["i'd like to book {book_room_price}ly priced rooms for {book_room_nights[0]} night{book_room_nights[1]}", [functions.book_room], [functions.book_room_price, functions.book_room_nights]],
-    ["i'd like to book for {book_room_nights[0]} night{book_room_nights[1]} in a {book_room_price} price range}", [functions.book_room], [functions.book_room_nights, functions.book_room_price]],
+    ["i'd like to book for {book_room_nights[0]} night{book_room_nights[1]} in a {book_room_price} price range", [functions.book_room], [functions.book_room_nights, functions.book_room_price]],
     ["i'd like to book {book_room_number[0]} room{book_room_number[1]} for {book_room_nights[0]} night{book_room_nights[1]} in a {book_room_price} price range", [functions.book_room], [functions.book_room_number, functions.book_room_nights, functions.book_room_price]],
     ["i'd like to book rooms in {book_room_city} in a {book_room_price} price range", [functions.book_room], [functions.book_room_city, functions.book_room_price]],
 
     ["i'd like to book {book_room_number[0]} room{book_room_number[1]} in {book_room_city}", [functions.book_room], [functions.book_room_number, functions.book_room_city]],
     ["i'd like to book rooms in {book_room_city} for {book_room_nights[0]} night{book_room_nights[1]}", [functions.book_room], [functions.book_room_city, functions.book_room_nights]],
-    ["i'd like to book rooms for {book_room_nights[0]} night{book_room_nights[1]}} in {book_room_city}", [functions.book_room], [functions.book_room_nights, functions.book_room_city]],
+    ["i'd like to book rooms for {book_room_nights[0]} night{book_room_nights[1]} in {book_room_city}", [functions.book_room], [functions.book_room_nights, functions.book_room_city]],
     ["i'd like to book {book_room_number[0]} room{book_room_number[1]} for {book_room_nights[0]} night{book_room_nights[1]} in {book_room_city}", [functions.book_room], [functions.book_room_number, functions.book_room_nights, functions.book_room_city]],
     ["i'd like to book {book_room_number[0]} room{book_room_number[1]} in {book_room_city}", [functions.book_room], [functions.book_room_number, functions.book_room_city]],
     
@@ -63,7 +77,7 @@ templates = [
     ["can i book {book_room_number[0]} room{book_room_number[1]} in a {book_room_price} price range", [functions.book_room], [functions.book_room_number, functions.book_room_price]],
     ["can i book rooms for {book_room_nights[0]} night{book_room_nights[1]}", [functions.book_room], [functions.book_room_nights]],
     ["can i book {book_room_price}ly priced rooms for {book_room_nights[0]} night{book_room_nights[1]}", [functions.book_room], [functions.book_room_price, functions.book_room_nights]],
-    ["can i book for {book_room_nights[0]} night{book_room_nights[1]} in a {book_room_price} price range}", [functions.book_room], [functions.book_room_nights, functions.book_room_price]],
+    ["can i book for {book_room_nights[0]} night{book_room_nights[1]} in a {book_room_price} price range", [functions.book_room], [functions.book_room_nights, functions.book_room_price]],
     ["can i book {book_room_number[0]} room{book_room_number[1]} for {book_room_nights[0]} night{book_room_nights[1]} in a {book_room_price} price range", [functions.book_room], [functions.book_room_number, functions.book_room_nights, functions.book_room_price]],
     ["can i book rooms in {book_room_city} in a {book_room_price} price range", [functions.book_room], [functions.book_room_city, functions.book_room_price]],
 
@@ -81,7 +95,7 @@ templates = [
     ["i'd like to reserve {book_room_number[0]} room{book_room_number[1]} in a {book_room_price} price range", [functions.book_room], [functions.book_room_number, functions.book_room_price]],
     ["i'd like to reserve rooms for {book_room_nights[0]} night{book_room_nights[1]}", [functions.book_room], [functions.book_room_nights]],
     ["i'd like to reserve {book_room_price}ly priced rooms for {book_room_nights[0]} night{book_room_nights[1]}", [functions.book_room], [functions.book_room_price, functions.book_room_nights]],
-    ["i'd like to reserve for {book_room_nights[0]} night{book_room_nights[1]} in a {book_room_price} price range}", [functions.book_room], [functions.book_room_nights, functions.book_room_price]],
+    ["i'd like to reserve for {book_room_nights[0]} night{book_room_nights[1]} in a {book_room_price} price range", [functions.book_room], [functions.book_room_nights, functions.book_room_price]],
     ["i'd like to reserve {book_room_number[0]} room{book_room_number[1]} for {book_room_nights[0]} night{book_room_nights[1]} in a {book_room_price} price range", [functions.book_room], [functions.book_room_number, functions.book_room_nights, functions.book_room_price]],
     ["i'd like to reserve rooms in {book_room_city} in a {book_room_price} price range", [functions.book_room], [functions.book_room_city, functions.book_room_price]],
 
@@ -99,7 +113,7 @@ templates = [
     ["can you reserve {book_room_number[0]} room{book_room_number[1]} in a {book_room_price} price range", [functions.book_room], [functions.book_room_number, functions.book_room_price]],
     ["can you reserve rooms for {book_room_nights[0]} night{book_room_nights[1]}", [functions.book_room], [functions.book_room_nights]],
     ["can you reserve {book_room_price}ly priced rooms for {book_room_nights[0]} night{book_room_nights[1]}", [functions.book_room], [functions.book_room_price, functions.book_room_nights]],
-    ["can you reserve for {book_room_nights[0]} night{book_room_nights[1]} in a {book_room_price} price range}", [functions.book_room], [functions.book_room_nights, functions.book_room_price]],
+    ["can you reserve for {book_room_nights[0]} night{book_room_nights[1]} in a {book_room_price} price range", [functions.book_room], [functions.book_room_nights, functions.book_room_price]],
     ["can you reserve {book_room_number[0]} room{book_room_number[1]} for {book_room_nights[0]} night{book_room_nights[1]} in a {book_room_price} price range", [functions.book_room], [functions.book_room_number, functions.book_room_nights, functions.book_room_price]],
     ["can you reserve rooms in {book_room_city} in a {book_room_price} price range", [functions.book_room], [functions.book_room_city, functions.book_room_price]],
 
@@ -132,25 +146,35 @@ templates = [
     ["i'm interested in {book_room_price} rooms", None, [functions.book_room_price]],
 ]
 
-# first_utterance = re.compile(r".*(book a table|restaurant reservation|have a table).*")
-# cuisine = re.compile(r".*(spanish|british|french|italian|indian).*")
-# count = re.compile(r".*(one|two|three|four|five|six|seven|eight|nine).*")
-# price = re.compile(r".*(cheap|moderate|expensive).*")
-# city = re.compile(r".*(paris|madrid|bombay|london|rome).*")
-
+counts = [{0: "two", 1: "s"}, {0: "four", 1: "s"}, {0: "six", 1: "s"}, {0: "eight", 1: "s"}]
+# counts = [{0: "one", 1: ""}, {0: "two", 1: "s"}, {0: "three", 1: "s"}, {0: "four", 1: "s"}, {0: "five", 1: "s"}, {0: "six", 1: "s"}, {0: "seven", 1: "s"}, {0: "eight", 1: "s"}]
+cities = ['paris', 'madrid', 'bombay', 'london', 'rome']
+price = ["cheap", "moderate", "expensive"]
 values = {
-    functions.book_room_city: ['paris', 'madrid', 'bombay', 'london', 'rome'],
-    functions.book_room_nights: [{0:"one", 1:""}, {0:"two", 1:"s"}, {0:"three", 1:"s"}, {0:"four", 1:"s"}, {0:"five", 1:"s"}, {0:"six", 1:"s"}, {0:"seven", 1:"s"}],
-    functions.book_room_number: [{0:"one", 1:""}, {0:"two", 1:"s"}, {0:"three", 1:"s"}, {0:"four", 1:"s"}, {0:"five", 1:"s"}, {0:"six", 1:"s"}, {0:"seven", 1:"s"}],
-    functions.book_room_price: ["cheap", "moderate", "expensive"]
+    functions.book_room_city: cities,
+    functions.book_room_nights: cities,
+    functions.book_room_number: counts,
+    functions.book_room_price: price,
+    functions.order_taxi_location: cities,
+    functions.book_ticket_from: cities,
+    functions.book_ticket_to: cities,
+    functions.book_ticket_price: price,
 }
+
+cities = ["hanoi", "beijing", "bangkok", "seoul", "tokyo"]
+values_OOV = values.copy()
+values_OOV[functions.book_room_city] = cities
+values_OOV[functions.book_room_nights] = cities
+values_OOV[functions.order_taxi_location] = cities
+values_OOV[functions.book_ticket_from] = cities
+values_OOV[functions.book_ticket_to] = cities
 
 function_groups = [
     [functions.book_room, [functions.book_room_city,
                            functions.book_room_nights,
                            functions.book_room_number,
                            functions.book_room_price]],
-    [functions.order_taxi, [functions.order_taxi_location]],
-    [functions.book_ticket, [functions.book_ticket_from,
-                             functions.book_ticket_to,
-                             functions.book_ticket_price]]]
+    [functions.order_taxi, [functions.order_taxi_location]]]# ,
+    # [functions.book_ticket, [functions.book_ticket_from,
+    #                          functions.book_ticket_to,
+    #                          functions.book_ticket_price]]]

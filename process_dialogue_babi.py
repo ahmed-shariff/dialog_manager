@@ -10,10 +10,10 @@ pd.set_option("display.max_colwidth", 100)
 
 class _patterns():
     first_utterance = re.compile(r".*(book a table|restaurant reservation|have a table).*")
-    cuisine = re.compile(r".*(spanish|british|french|italian|indian).*")
+    cuisine = re.compile(r".*(spanish|british|french|italian|indian|vietnamese|thai|cantonese|korean|japanese).*")
     count = re.compile(r".*(one|two|three|four|five|six|seven|eight|nine).*")
     price = re.compile(r".*(cheap|moderate|expensive).*")
-    city = re.compile(r".*(paris|madrid|bombay|london|rome).*")
+    city = re.compile(r".*(paris|madrid|bombay|london|rome|hanoi|beijing|bangkok|seoul|tokyo).*")
 
 
 class _functions():
@@ -104,12 +104,14 @@ def _convert_to_json(file_path, out_file_path):
     for transform_fn in transform_fns:
         data = transform_fn(data)
     # print(set(data[data['utterance'].apply(
-    #     lambda x: isinstance(x, list))]['utterance'].apply(lambda x: x[4]).to_list()))
-    print(data[data['by'] == 'user'].loc[:, ['utterance', 'trigger_functions', 'response_functions']])
+    #     lambda x: isinstance(x, list))]['utterance'].apply(lambda x: x[1]).to_list()))
+    # return
+    df = data[data['by'] == 'user'].loc[:, ['utterance', 'trigger_functions', 'response_functions']]
+    print(df)
     if out_file_path is None:
         out_file_path = file_path.replace(".txt", ".json")
     with open(out_file_path, "w") as f:
-        json.dump(json.loads(data.to_json()), f)
+        json.dump(json.loads(data.to_json(orient='index')), f)
 
 
 if __name__ == '__main__':
