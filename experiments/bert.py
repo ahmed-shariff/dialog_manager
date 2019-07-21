@@ -30,11 +30,12 @@ WARMUP_PROPORTION = 0.1
 MAX_SEQ_LENGTH = 32
 
 
+
 class BertDataProcessor(DataProcessor):
     def __init__(self, ):
         pass
 
-    def get_train_examples(self):
+    def get_train_examples(self, data_dir):
         return [InputExample("a", "I am not a dog", label="a"),
                 InputExample("b", "I am not a cat", label="b")]
 
@@ -110,6 +111,9 @@ class BertExperiment(BaseTorchExperiment):
         else:
             self.epocs_params = 0
             self.log("No checkpoint")
+        if use_cuda:
+            self.model.cuda()
+            self.optimizer.cuda()
 
     def train_loop(self, input_fn, steps, *args, **kwargs):
         self.model.train()
@@ -141,7 +145,7 @@ class BertExperiment(BaseTorchExperiment):
                 self.optimizer.zero_grad()
                 global_step += 1
 
-    def evaluate_loop(self, input_fn, steps):
+    def evaluate_loop(self, input_fn, steps, *args, **kwargs):
         return MetricContainer()
 
 

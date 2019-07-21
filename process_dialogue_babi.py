@@ -110,8 +110,13 @@ def _convert_to_json(file_path, out_file_path):
     print(df)
     if out_file_path is None:
         out_file_path = file_path.replace(".txt", ".json")
+    out = data[data['by'] == 'user']#.loc[:, ['utterance', 'trigger_functions', 'response_functions']]
+    out = out[~out['trigger_functions'].isnull() | ~out['response_functions'].isnull()]
+    out = json.loads(out.to_json(orient='records'))
+    print(out_file_path)
     with open(out_file_path, "w") as f:
-        json.dump(json.loads(data.to_json(orient='index')), f)
+        json.dump(out, f)
+    print(pd.read_json(out_file_path, orient='records'))
 
 
 if __name__ == '__main__':

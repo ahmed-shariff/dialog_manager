@@ -1,4 +1,25 @@
-class functions:
+from easydict import EasyDict
+
+
+def order_taxi(location):
+    if location is not None:
+        print(f"ordered taxi to {location}")
+    raise NotImplementedError()
+
+
+def book_room(number, nights, price, city):
+    if all([i is not None for i in [number, nights, price, city]]):
+        print(f"Booked room for {number} for {nights} nights in a {price} price-range in {city}")
+    raise NotImplementedError()
+
+
+def book_ticket(from, to, price):
+    if all([i is not None for i in [from, to, price]]):
+        print(f"Booked ticket from {from} to {to} in a {price} price-range")
+    raise NotImplementedError()
+
+
+class functions(EasyDict):
     plurality = "plurality"
 
     root_concern = "root_concern"
