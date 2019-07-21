@@ -4,19 +4,22 @@ from easydict import EasyDict
 def order_taxi(location):
     if location is not None:
         print(f"ordered taxi to {location}")
-    raise NotImplementedError()
+        return True
+    return False
 
 
 def book_room(number, nights, price, city):
     if all([i is not None for i in [number, nights, price, city]]):
         print(f"Booked room for {number} for {nights} nights in a {price} price-range in {city}")
-    raise NotImplementedError()
+        return True
+    return False
 
 
-def book_ticket(from, to, price):
-    if all([i is not None for i in [from, to, price]]):
-        print(f"Booked ticket from {from} to {to} in a {price} price-range")
-    raise NotImplementedError()
+def book_ticket(departure, to, price):
+    if all([i is not None for i in [departure, to, price]]):
+        print(f"Booked ticket from {departure} to {to} in a {price} price-range")
+        return True
+    return False
 
 
 class functions(EasyDict):
@@ -34,7 +37,7 @@ class functions(EasyDict):
     book_room_city = "book_room_city"
 
     book_ticket = "book_ticket"
-    book_ticket_from = "book_ticket_from"
+    book_ticket_departure = "book_ticket_departure"
     book_ticket_to = "book_ticket_to"
     book_ticket_price = "book_ticket_price"
 
@@ -46,7 +49,7 @@ system_templates = {
     functions.book_room_nights: "How many nights will you be staying for",
     functions.book_room_price: "In what price range will you be reserving",
     functions.book_room_city: "In which city would you like to have your rooms",
-    functions.book_ticket_from: "Where will you be traveling from",
+    functions.book_ticket_departure: "Where will you be traveling from",
     functions.book_ticket_to: "Where will you be traveling to",
     functions.book_ticket_price: "In what price range will you be reserving tickets"
     }
@@ -177,7 +180,7 @@ values = {
     functions.book_room_number: counts,
     functions.book_room_price: price,
     functions.order_taxi_location: cities,
-    functions.book_ticket_from: cities,
+    functions.book_ticket_departure: cities,
     functions.book_ticket_to: cities,
     functions.book_ticket_price: price,
 }
@@ -186,7 +189,7 @@ cities = ["hanoi", "beijing", "bangkok", "seoul", "tokyo"]
 values_OOV = values.copy()
 values_OOV[functions.book_room_city] = cities
 values_OOV[functions.order_taxi_location] = cities
-values_OOV[functions.book_ticket_from] = cities
+values_OOV[functions.book_ticket_departure] = cities
 values_OOV[functions.book_ticket_to] = cities
 
 function_groups = [
@@ -194,7 +197,7 @@ function_groups = [
                            functions.book_room_nights,
                            functions.book_room_number,
                            functions.book_room_price]],
-    [functions.order_taxi, [functions.order_taxi_location]]]# ,
-    # [functions.book_ticket, [functions.book_ticket_from,
-    #                          functions.book_ticket_to,
-    #                          functions.book_ticket_price]]]
+    [functions.order_taxi, [functions.order_taxi_location]],
+    [functions.book_ticket, [functions.book_ticket_departure,
+                             functions.book_ticket_to,
+                             functions.book_ticket_price]]]

@@ -67,7 +67,7 @@ def generate_dialogue(dialogue_id, df, trigger_function, response_functions, kb)
             next(turn_id),
             next(reply_to),
             tf_template['utterance'].iloc[0].format(**fist_response_functions),
-            list(fist_response_functions.keys()),
+            list(fist_response_functions.keys()) + functions.root_concern,
             [trigger_function]))
     except Exception:
         print(tf_template)
@@ -96,12 +96,17 @@ def generate_dialogue(dialogue_id, df, trigger_function, response_functions, kb)
     return lines
 
 
-def generate_dataset():
-    train_kb, test_kb = get_split_kb(values, 0.5)
-    test_OOV_kb, _ = get_split_kb(values_OOV, 0)
+def get_template_df():
     template_df = pd.DataFrame(templates, columns=['utterance',  'trigger_functions', 'response_functions'])
     template_df.loc[:, 'response_functions_count'] = template_df['response_functions']\
                .apply(lambda x: len(x) if x is not None else np.NaN)
+    return template_df
+
+
+def generate_dataset():
+    train_kb, test_kb = get_split_kb(values, 0.5)
+    test_OOV_kb, _ = get_split_kb(values_OOV, 0)
+    template_df = get_template_df()
     dialogue_id = itertools.count(0)
 
     def gen_dataset(kb):
