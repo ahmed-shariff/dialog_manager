@@ -1,68 +1,89 @@
 import torch
 import itertools
-import torch.utils.data
-import torch.nn as nn
 import os
-import json
 import pandas as pd
-from tqdm import tqdm, trange
+from pathlib import Path
+from fastai.basic_data import DeviceDataLoader
 from fastai.text import (TextLMDataBunch,
                          TextDataBunch,
                          load_data,
-                         language_model_learner,
+                         TextList,
+                         # language_model_learner,
+                         accuracy,
                          text_classifier_learner,
                          AWD_LSTM)
-from sklearn.model_selection import train_test_split
-from mlpipeline.base import DataLoaderABC
+from fastai.text.learner import (_model_meta,
+                                 get_language_model,
+                                 LanguageLearner)
+import fastprogress.fastprogress
 from mlpipeline.utils import (ExecutionModeKeys,
                               Versions,
-                              MetricContainer,
-                              version_parameters)
-from mlpipeline_torch_utils import (BaseTorchExperiment)
-DATA_FILE = "ParlAI/data/dialog-bAbI/dialog-bAbI-tasks/dialog-babi-task1-API-calls-dev.json"
+                              MetricContainer)
+from mlpipeline.pytorch import BaseTorchExperimentABC, BaseTorchDataLoader, Datasets
+
+
+TRN_DATA_FILE = "../data/generated_dataset_trn.json"
+DEV_DATA_FILE = "../data/generated_dataset_dev.json"
+TST_DATA_FILE = "../data/generated_dataset_tst.json"
+TST_OOV_DATA_FILE = "../data/generated_dataset_tst-OOV.json"
 BATCH_SIZE = 16  # 256/16
+LR_DIV_FACTOR = 256/BATCH_SIZE
 BPTT = 80
+PRE_TRAINED_FILES = Path("pretrained_models/")
 
 
-class DataLoader(DataLoaderABC):
-    def __init__(self, **kwargs):
-        df = pd.read_json(DATA_FILE)
-        df = df[df['by'] == 'user']
-        df = df[~df['response_functions'].isnull() | ~df['trigger_functions'].isnull()]
+# Taken from: https://github.com/fastai/fastai/blob/master/fastai/text/learner.py#L201
+def language_model_learner(data, arch,
+                           config=None,
+                           drop_mult=1.,
+                           pretrained=True,
+                           pretrained_fnames=None, **learn_kwargs):
+    "Create a `Learner` with a language model from `data` and `arch`."
+    model = get_language_model(arch, len(data.vocab.itos), config=config, drop_mult=drop_mult)
+    meta = _model_meta[arch]
+    learn = LanguageLearner(data, model, split_func=meta['split_lm'], **learn_kwargs)
+    # url = 'url_bwd' if data.backwards else 'url'
+    fnames = [PRE_TRAINED_FILES/f'{fn}.{ext}' for fn, ext in zip(pretrained_fnames, ['pth', 'pkl'])]
+    learn.load_pretrained(*fnames)
+    learn.freeze()
+    return learn
 
-        def get_list(x): return x if x is not None else []
-        df.loc[:, "functions"] = pd.Series([list(itertools.chain(get_list(row['trigger_functions']),
-                                                                 get_list(row['response_functions'])))
-                                            for _, row in df.iterrows()], index=df.index)
-        df = df.loc[:, ['utterance', 'functions']]
-        self.df_train, self.df_valid = train_test_split(df, stratify=df['functions'], random_state=100, test_size=0.25)
-        self._train_data_size = len(self.df_train)
-        self._test_data_size = len(self.df_valid)
-        self.log("Train dataset size: {}".format(self._train_data_size))
-        self.log("Validation dataset size: {}".format(self._test_data_size))
+
+def load_dataset(file_path):
+    df = pd.read_json(file_path, orient='index')
+
+    df = df[df['by'] == 'user']
+    df = df[~df['response_functions'].isnull() | ~df['trigger_functions'].isnull()]
+
+    def get_list(x): return x if x is not None else []
+    df.loc[:, "functions"] = pd.Series([list(itertools.chain(get_list(row['trigger_functions']),
+                                                             get_list(row['response_functions'])))
+                                        for _, row in df.iterrows()], index=df.index)
+    df = df.loc[:, ['utterance', 'functions']]
+    used_labels = df['functions']
+    return df, set(list(itertools.chain(*used_labels.to_list())))
+
+
+class DataLoader(BaseTorchDataLoader):
+    def __init__(self, datasets, **kwargs):
+        super().__init__(datasets, None, 1, **kwargs)
 
     def get_train_input(self, mode=ExecutionModeKeys.TRAIN, **kargs):
-        return self.df_train
+        return self.datasets.train_dataset
 
     def get_test_input(self, **kargs):
-        return self.df_valid
+        return self.datasets.test_dataset
+
+    def get_validation_input(self, **kwargs):
+        return self.datasets.validation_dataset
 
     def get_dataloader_summery(self, **kargs):
         return self.summery
 
-    def get_train_sample_count(self):
-        return self._train_data_size
 
-    def get_test_sample_count(self):
-        return self._test_data_size
-
-
-class Experiment(BaseTorchExperiment):
-    def setup_model(self, version, experiment_dir):
-        super().setup_model(version, experiment_dir)
-
-    def pre_execution_hook(self, version, experiment_dir, exec_mode=ExecutionModeKeys.TEST):
-        super().pre_execution_hook(version, experiment_dir, exec_mode)
+class Experiment(BaseTorchExperimentABC):
+    def pre_execution_hook(self, mode=ExecutionModeKeys.TEST):
+        super().pre_execution_hook(mode)
         self.data_lm_name = "data_lm.pkl"
         self.data_class_name = "data_class_name"
         self.fwd_enc_name = "fwd_enc"
@@ -70,78 +91,164 @@ class Experiment(BaseTorchExperiment):
         self.fwd_class_name = 'fwd_clas'
         self.bwd_class_name = 'bwd_clas'
 
-        dataloader = version[version_parameters.DATALOADER]()
-        data_lm_path = os.path.join(experiment_dir, self.data_lm_name)
+        # to make sure the outputs are also logged
+        fastprogress.fastprogress.WRITER_FN = self._get_master_bar_write_fn()
+
+        data_lm_path = os.path.join(self.experiment_dir, self.data_lm_name)
         if not os.path.exists(os.path.dirname(data_lm_path)):
             os.makedirs(os.path.dirname(data_lm_path))
         if not os.path.exists(data_lm_path):
-            data_lm = TextLMDataBunch.from_df(path=experiment_dir,
-                                              train_df=dataloader.get_train_input(),
-                                              valid_df=dataloader.get_test_input(),
+            data_lm = TextLMDataBunch.from_df(path=self.experiment_dir,
+                                              train_df=self.dataloader.get_train_input(),
+                                              valid_df=self.dataloader.get_test_input(),
+                                              text_cols='utterance',
                                               bs=BATCH_SIZE)
             data_lm.save(self.data_lm_name)
-        self.data_lm = load_data(experiment_dir, self.data_lm_name, bs=BATCH_SIZE, bptt=BPTT)
-        self.data_bwd = load_data(experiment_dir, self.data_lm_name, bs=BATCH_SIZE, bptt=BPTT, backwards=True)
+        self.data_lm = load_data(self.experiment_dir, self.data_lm_name, bs=BATCH_SIZE, bptt=BPTT)
+        self.data_bwd = load_data(self.experiment_dir, self.data_lm_name, bs=BATCH_SIZE,
+                                  bptt=BPTT, backwards=True)
 
-        data_class_path = os.path.join(experiment_dir, self.data_class_name)
+        data_class_path = os.path.join(self.experiment_dir, self.data_class_name)
         if not os.path.exists(data_class_path):
-            data_class = TextDataBunch.from_df(path=experiment_dir,
-                                               train_df=dataloader.get_train_input(),
-                                               valid_df=dataloader.get_test_input(),
+            data_class = TextDataBunch.from_df(path=self.experiment_dir,
+                                               train_df=self.dataloader.get_train_input(),
+                                               valid_df=self.dataloader.get_test_input(),
                                                text_cols='utterance',
                                                label_cols='functions',
                                                vocab=data_lm.train_ds.vocab,
                                                bs=BATCH_SIZE)
-            data_class.save()
-        self.data_class = load_data(experiment_dir, self.data_class_name, bs=BATCH_SIZE)
-        self.data_class_bwd = load_data(experiment_dir, self.data_class_name, bs=BATCH_SIZE, backwards=True)
+            data_class.save(self.data_class_name)
+        self.data_class = load_data(self.experiment_dir, self.data_class_name, bs=BATCH_SIZE)
+        self.data_class_bwd = load_data(self.experiment_dir, self.data_class_name, bs=BATCH_SIZE, backwards=True)
 
-    def train_loop(self, input_fn, steps, version, *args, **kwargs):
+    def train_loop(self, input_fn, steps, *args, **kwargs):
+        # return
         # lm forward
-        self._train_encoder(self.data_lm, self.fwd_enc_name)
+        self._train_encoder(self.data_lm, self.fwd_enc_name, ["wt103-fwd/lstm_fwd", "wt103-fwd/itos_wt103"])
         # lm backward
-        self._train_encoder(self.data_bwd, self.bwd_enc_name)
+        self._train_encoder(self.data_bwd, self.bwd_enc_name, ["wt103-bwd/lstm_bwd", "wt103-bwd/itos_wt103"])
 
         # class forward
-        self._train_classifier(self.data_class, self.fwd_enc_name, self.bwd_class_name)
+        self.class_fwd = self._train_classifier(self.data_class, self.fwd_enc_name, self.fwd_class_name)
         # class backwards
-        self._train_classifier(self.data_class_bwd, self.bwd_enc_name, self.bwd_class_name)
+        self.class_bwd = self._train_classifier(self.data_class_bwd, self.bwd_enc_name, self.bwd_class_name)
 
-    def _train_encoder(self, data, encoder_name):
-        learn = language_model_learner(data, AWD_LSTM)
-        learn = learn.to_fp16(clip=0.1)
-        learn.fit_one_cycle(1, 2e-2, moms=(0.8, 0.7), wd=0.1)
-        learn.unfreeze()
-        learn.fit_one_cycle(10, 2e-3, moms=(0.8, 0.7), wd=0.1)
-        learn.save_encoder(encoder_name)
+    def _train_encoder(self, data, encoder_name, pretrained_fnames):
+        learn = language_model_learner(data, AWD_LSTM, pretrained_fnames=pretrained_fnames)
+        try:
+            path = f'{encoder_name}'
+            learn.load_encoder(path)
+            self.log('Loaded pretrained encoder from {}'.format(str(path)))
+        except FileNotFoundError:
+            self.log(f'Training encoder `{encoder_name}`')
+            learn = learn.to_fp16(clip=0.1)
+            learn.fit_one_cycle(1, 2e-2/LR_DIV_FACTOR, moms=(0.8, 0.7), wd=0.1)
+            learn.unfreeze()
+            learn.fit_one_cycle(10, 2e-3/LR_DIV_FACTOR, moms=(0.8, 0.7), wd=0.1)
+            self.log(f"Saving encoder `{encoder_name}`")
+            learn.save_encoder(encoder_name)
 
     def _train_classifier(self, data_class, encoder_name, classifier_name):
         learn = text_classifier_learner(data_class, AWD_LSTM, drop_mult=0.5, pretrained=False)
-        learn.load_encoder(encoder_name)
-        lr = 1e-1
-        learn.fit_one_cycle(1, lr, moms=(0.8, 0.7))
+        try:
+            path = f'{classifier_name}'
+            learn.load(path)
+            self.log('Loaded pretrained classifier from {}'.format(str(path)))
+            # return learn
+        except FileNotFoundError:
+            self.log(f'Training classifier `{classifier_name}`')
+            learn.load_encoder(encoder_name)
+            lr = 1e-1/LR_DIV_FACTOR
+            learn.fit_one_cycle(1, lr, moms=(0.8, 0.7))
 
-        learn.freeze_to(-2)
-        lr /= 2
-        learn.fit_one_cycle(1, slice(lr/(2.6**4), lr), moms=(0.8, 0.7))
+            # TODO remove
+            # learn.save(classifier_name)
+            # return learn
+            learn.freeze_to(-2)
+            lr /= 2
+            learn.fit_one_cycle(1, slice(lr/(2.6**4), lr), moms=(0.8, 0.7))
 
-        learn.freeze_to(-3)
-        lr /= 2
-        learn.fit_one_cycle(1, slice(lr/(2.6**4), lr), moms=(0.8, 0.7))
+            learn.freeze_to(-3)
+            lr /= 2
+            learn.fit_one_cycle(1, slice(lr/(2.6**4), lr), moms=(0.8, 0.7))
 
-        learn.unfreeze()
-        lr /= 5
-        learn.fit_one_cycle(2, slice(lr/(2.6**4), lr), moms=(0.8, 0.7))
+            learn.unfreeze()
+            lr /= 5
+            learn.fit_one_cycle(2, slice(lr/(2.6**4), lr), moms=(0.8, 0.7))
+            self.log(f"Saving classifier `{classifier_name}`")
+            learn.save(classifier_name)
+        return learn
 
-        learn.save(classifier_name)
+    def _get_master_bar_write_fn(self):
+        def write_fn(line, end=None):
+            if end is not None:
+                print(line, end=end)
+            else:
+                print(end="\r")
+                self.log(line)
+        return write_fn
 
-    def evaluate_loop(self, input_fn, steps, *args, **kwargs):
+    def post_execution_hook(self, **kwargs):
+        metrics = MetricContainer(['validation_accuracy_test', 'validation_accuracy_test_OOV'])
+        metrics.validation_accuracy_test.update(self._get_accuracy(self.data_class.valid_dl), 1)
+        # line = self.dataloader.get_train_input().iloc[0]
+        # print(self.class_fwd.predict(line['utterance'])[0].obj)
+
+        dl = self.current_version["oov_df"]()
+        oov_db = TextDataBunch.from_df(path=self.experiment_dir,
+                                       train_df=dl.get_test_input(),
+                                       valid_df=dl.get_test_input(),
+                                       text_cols='utterance',
+                                       label_cols='functions',
+                                       vocab=self.data_lm.train_ds.vocab,
+                                       bs=BATCH_SIZE)
+        # oov_db_bwd = TextDataBunch.from_df(path=self.experiment_dir,
+        #                                    train_df=dl.get_test_input(),
+        #                                    valid_df=dl.get_test_input(),
+        #                                    text_cols='utterance',
+        #                                    label_cols='functions',
+        #                                    vocab=self.data_lm.train_ds.vocab,
+        #                                    bs=BATCH_SIZE,
+        #                                    backwards=True)
+        metrics.validation_accuracy_test_OOV.update(self._get_accuracy(oov_db.valid_dl), 1)
+        metrics.log_metrics()
+
+    def _get_accuracy(self, dl):
+        dl_bwd = dl_fwd = dl
+        valid_pred_fwd, lbl_fwd = self.class_fwd.get_preds(dl_fwd, ordered=True)
+        valid_pred_bwd, lbl_bwd = self.class_bwd.get_preds(dl_bwd, ordered=True)
+
+        valid_pred = (valid_pred_bwd + valid_pred_fwd) / 2 > 0.5
+        return accuracy(valid_pred.long(), lbl_fwd.long())
+
+
+
+        # print(self.data_class.vocab__dict__)
+        # x = TextList.from_df(dl.get_train_input(), self.experiment_dir, cols='utterance').split_none()
+        # x = x.label_from_df(cols='functions', classes='functions')
+        # print(type(x))
+        # x = DeviceDataLoader.create(x, bs=1)
+        # print(x)
+        # print(next(iter(x)))
+        # print(DeviceDataLoader.create(x, bs=1))
+        # print(self.data_class.__dir__())
+        # print(self.x.validate(x))
         return MetricContainer()
 
 
-v = Versions(lambda: DataLoader(), 1, 1)
+v = Versions(None, 1, 1)
 
-v.add_version("temp")
-EXPERIMENT = Experiment(v)
 
-#train_model()
+v.add_version("dialogue_babi",
+              dataloader=lambda: DataLoader(Datasets(train_dataset_file_path=TRN_DATA_FILE,
+                                                     test_dataset_file_path=TST_DATA_FILE,
+                                                     validation_dataset_file_path=None,
+                                                     train_data_load_function=load_dataset,
+                                                     validation_size=0)),
+              custom_paramters={
+                  "oov_df": lambda: DataLoader(Datasets(TST_OOV_DATA_FILE,
+                                                        train_data_load_function=load_dataset,
+                                                        test_size=1,
+                                                        validation_size=0)),
+              })
+EXPERIMENT = Experiment(v, True)
