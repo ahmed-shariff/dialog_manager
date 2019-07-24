@@ -1,7 +1,7 @@
+import os
 import data.templates as templates
+from mlpipeline.utils import add_script_dir_to_PATH
 from components import (Dialogue_Manager,
-                        ContextObjectStates,
-                        ContextObjectTypes,
                         FunctionResolverBase,
                         Function,
                         ParamtereExtractionFunctionBase)
@@ -113,4 +113,5 @@ def test_dialogue():
 
 
 if __name__ == '__main__':
+    add_script_dir_to_PATH(os.path.abspath("../"))
     test_dialogue()
