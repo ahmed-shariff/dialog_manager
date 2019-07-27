@@ -4,19 +4,21 @@ import random
 import itertools
 import json
 from sklearn.model_selection import train_test_split
-from data.templates import (templates,
-                            system_templates,
-                            functions,
-                            function_groups,
-                            values,
-                            values_OOV)
+from tqdm import tqdm, trange
+from templates import (templates,
+                       system_templates,
+                       functions,
+                       function_groups,
+                       values,
+                       values_OOV)
 
-pd.set_option("display.max_colwidth", 100)
+pd.set_option("display.max_colwidth", 75)
 np.random.seed(100)
-
+DIALOGUE_BABI_PATH = "../ParlAI/data/dialog-bAbI/dialog-bAbI-tasks/dialog-babi-task1-API-calls-{}.json"
+OUTPUT_PATH = "generated_dataset_{}.json"
 
 def load_old_data():
-    with open("data/old_data.csv") as f:
+    with open("old_data.csv") as f:
         for line in f:
             line = line.rstrip().split(",")
             # if 'order-taxi' in line[1] or 'order-taxi' in line[2]:
@@ -67,7 +69,7 @@ def generate_dialogue(dialogue_id, df, trigger_function, response_functions, kb)
             next(turn_id),
             next(reply_to),
             tf_template['utterance'].iloc[0].format(**fist_response_functions),
-            list(fist_response_functions.keys()) + functions.root_concern,
+            list(fist_response_functions.keys()) + [functions.root_concern],
             [trigger_function]))
     except Exception:
         print(tf_template)
@@ -103,29 +105,34 @@ def get_template_df():
     return template_df
 
 
-def generate_dataset():
+def generate_dataset(num_dialogue):
     train_kb, test_kb = get_split_kb(values, 0.5)
     test_OOV_kb, _ = get_split_kb(values_OOV, 0)
     template_df = get_template_df()
     dialogue_id = itertools.count(0)
 
-    def gen_dataset(kb):
+    def gen_dataset(kb, ext):
         dialogues = []
-        for trigger_function, response_functions in function_groups:
-            for _ in range(10):
-                idx = 'added_{}'.format(next(dialogue_id))
+        print(f"\nLoading dialogue_babi {ext} dataset")
+        db_file_path = DIALOGUE_BABI_PATH.format(ext)
+        db_data = pd.read_json(db_file_path, orient='records')
+        db_data.loc[:, 'dataset'] = 'dialog_babi'
+        print(f"Generating {ext} dataset")
+        for trigger_function, response_functions in tqdm(function_groups, "Generating function groups "):
+            for _ in trange(num_dialogue, desc="Dialogue number "):
+                idx = 'generated_{}'.format(next(dialogue_id))
                 dialogues.extend(generate_dialogue(idx, template_df, trigger_function,
                                                    response_functions, train_kb))
         df = pd.DataFrame(dialogues)
+        df.loc[:, 'dataset'] = 'generated'
+        df = pd.concat([df, db_data]).reset_index(drop=True)
+        with open(OUTPUT_PATH.format(ext), "w") as f:
+            json.dump(json.loads(df.to_json(orient='index')), f)
         return df
-    with open("data/generated_dataset_trn.json", "w") as f:
-        json.dump(json.loads(gen_dataset(train_kb).to_json(orient='index')), f)
-    with open("data/generated_dataset_dev.json", "w") as f:
-        json.dump(json.loads(gen_dataset(train_kb).to_json(orient='index')), f)
-    with open("data/generated_dataset_tst.json", "w") as f:
-        json.dump(json.loads(gen_dataset(test_kb).to_json(orient='index')), f)
-    with open("data/generated_dataset_tst_OOV.json", "w") as f:
-        json.dump(json.loads(gen_dataset(test_OOV_kb).to_json(orient='index')), f)
+    gen_dataset(train_kb, 'trn')
+    gen_dataset(train_kb, 'dev')
+    gen_dataset(test_kb, 'tst')
+    gen_dataset(test_OOV_kb, 'tst-OOV')
 
 
 def get_split_kb(values_dict, test_size):
@@ -145,14 +152,4 @@ def get_split_kb(values_dict, test_size):
 
 
 if __name__ == '__main__':
-    # load_old_data()
-    # load_new_data()
-    # template_df = pd.DataFrame(templates, columns=['utterance',  'trigger_functions', 'response_functions'])
-    # template_df.loc[:, 'response_functions_count'] = template_df['response_functions']\
-    #            .apply(lambda x: len(x) if x is not None else np.NaN)
-    # generate_dialogue(0, template_df, functions.book_room,
-    #                   [functions.book_room_city,
-    #                    functions.book_room_nights,
-    #                    functions.book_room_number,
-    #                    functions.book_room_price])
-    generate_dataset()
+    generate_dataset(1000)

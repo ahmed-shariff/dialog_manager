@@ -106,13 +106,13 @@ def _convert_to_json(file_path, out_file_path):
     # print(set(data[data['utterance'].apply(
     #     lambda x: isinstance(x, list))]['utterance'].apply(lambda x: x[1]).to_list()))
     # return
-    df = data[data['by'] == 'user'].loc[:, ['utterance', 'trigger_functions', 'response_functions']]
-    print(df)
+    # df = data[data['by'] == 'user'].loc[:, ['utterance', 'trigger_functions', 'response_functions', 'by']]
+    # df = data.loc[:, ['utterance', 'trigger_functions', 'response_functions', 'by']]
     if out_file_path is None:
         out_file_path = file_path.replace(".txt", ".json")
-    out = data[data['by'] == 'user']#.loc[:, ['utterance', 'trigger_functions', 'response_functions']]
-    out = out[~out['trigger_functions'].isnull() | ~out['response_functions'].isnull()]
-    out = json.loads(out.to_json(orient='records'))
+    # out = data[data['by'] == 'user']#.loc[:, ['utterance', 'trigger_functions', 'response_functions']]
+    # out = out[~out['trigger_functions'].isnull() | ~out['response_functions'].isnull()]
+    out = json.loads(data.to_json(orient='records'))
     print(out_file_path)
     with open(out_file_path, "w") as f:
         json.dump(out, f)
