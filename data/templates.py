@@ -22,6 +22,13 @@ def book_ticket(number, departure, to, price):
     return False
 
 
+def book_table(cuisine, city, count, price):
+    if all([i is not None for i in [cuisine, city, count, price]]):
+        print(f"Booked {count} tables in a restaurant with cousine {cuisine} in {city} in a {price} price-range")
+        return True
+    return False
+
+
 class functions(EasyDict):
     plurality = "plurality"
 

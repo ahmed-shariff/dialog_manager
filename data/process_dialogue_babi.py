@@ -96,6 +96,7 @@ def _convert_to_json(file_path, out_file_path):
     data.loc[:, 'response_functions'] = None
     transform_fns = [
         _setFunctionValues(_patterns.first_utterance, _functions.book_table, 'trigger_functions'),
+        _setFunctionValues(_patterns.first_utterance, _functions.root_concern),
         _setFunctionValues(_patterns.cuisine, _functions.book_table_cuisine),
         _setFunctionValues(_patterns.count, _functions.book_table_count),
         _setFunctionValues(_patterns.city, _functions.book_table_city),
