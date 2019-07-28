@@ -1,31 +1,32 @@
-import torch
 import itertools
 import os
+import shutil
 import pandas as pd
 from pathlib import Path
-from fastai.basic_data import DeviceDataLoader
 from fastai.text import (TextLMDataBunch,
                          TextDataBunch,
                          load_data,
-                         TextList,
+                         # TextList,
                          # language_model_learner,
-                         accuracy,
+                         accuracy_thresh,
                          text_classifier_learner,
                          AWD_LSTM)
 from fastai.text.learner import (_model_meta,
                                  get_language_model,
                                  LanguageLearner)
 import fastprogress.fastprogress
-from mlpipeline.utils import (ExecutionModeKeys,
-                              Versions,
-                              MetricContainer)
-from mlpipeline.pytorch import BaseTorchExperimentABC, BaseTorchDataLoader, Datasets
-
+from mlpipeline.entities import ExecutionModeKeys
+from mlpipeline import (Versions,
+                        MetricContainer)
+from mlpipeline.utils import Datasets
+from mlpipeline.base import ExperimentABC
+from dataloader import DataLoader, LoadDataset
 
 TRN_DATA_FILE = "../data/generated_dataset_trn.json"
 DEV_DATA_FILE = "../data/generated_dataset_dev.json"
 TST_DATA_FILE = "../data/generated_dataset_tst.json"
 TST_OOV_DATA_FILE = "../data/generated_dataset_tst-OOV.json"
+
 BATCH_SIZE = 16  # 256/16
 LR_DIV_FACTOR = 256/BATCH_SIZE
 BPTT = 80
@@ -49,41 +50,8 @@ def language_model_learner(data, arch,
     return learn
 
 
-def load_dataset(file_path):
-    df = pd.read_json(file_path, orient='index')
-
-    df = df[df['by'] == 'user']
-    df = df[~df['response_functions'].isnull() | ~df['trigger_functions'].isnull()]
-
-    def get_list(x): return x if x is not None else []
-    df.loc[:, "functions"] = pd.Series([list(itertools.chain(get_list(row['trigger_functions']),
-                                                             get_list(row['response_functions'])))
-                                        for _, row in df.iterrows()], index=df.index)
-    df = df.loc[:, ['utterance', 'functions']]
-    used_labels = df['functions']
-    return df, set(list(itertools.chain(*used_labels.to_list())))
-
-
-class DataLoader(BaseTorchDataLoader):
-    def __init__(self, datasets, **kwargs):
-        super().__init__(datasets, None, 1, **kwargs)
-
-    def get_train_input(self, mode=ExecutionModeKeys.TRAIN, **kargs):
-        return self.datasets.train_dataset
-
-    def get_test_input(self, **kargs):
-        return self.datasets.test_dataset
-
-    def get_validation_input(self, **kwargs):
-        return self.datasets.validation_dataset
-
-    def get_dataloader_summery(self, **kargs):
-        return self.summery
-
-
-class Experiment(BaseTorchExperimentABC):
+class Experiment(ExperimentABC):
     def pre_execution_hook(self, mode=ExecutionModeKeys.TEST):
-        super().pre_execution_hook(mode)
         self.data_lm_name = "data_lm.pkl"
         self.data_class_name = "data_class_name"
         self.fwd_enc_name = "fwd_enc"
@@ -121,7 +89,7 @@ class Experiment(BaseTorchExperimentABC):
         self.data_class = load_data(self.experiment_dir, self.data_class_name, bs=BATCH_SIZE)
         self.data_class_bwd = load_data(self.experiment_dir, self.data_class_name, bs=BATCH_SIZE, backwards=True)
 
-    def train_loop(self, input_fn, steps, *args, **kwargs):
+    def train_loop(self, input_fn, *args, **kwargs):
         # return
         # lm forward
         self._train_encoder(self.data_lm, self.fwd_enc_name, ["wt103-fwd/lstm_fwd", "wt103-fwd/itos_wt103"])
@@ -179,18 +147,11 @@ class Experiment(BaseTorchExperimentABC):
             learn.save(classifier_name)
         return learn
 
-    def _get_master_bar_write_fn(self):
-        def write_fn(line, end=None):
-            if end is not None:
-                print(line, end=end)
-            else:
-                print(end="\r")
-                self.log(line)
-        return write_fn
-
     def post_execution_hook(self, **kwargs):
         metrics = MetricContainer(['validation_accuracy_test', 'validation_accuracy_test_OOV'])
-        metrics.validation_accuracy_test.update(self._get_accuracy(self.data_class.valid_dl), 1)
+        metrics.validation_accuracy_test.update(self._get_accuracy(self.data_class.valid_dl).item(), 1)
+        # print(self._get_accuracy(self.data_class.train_dl,
+        #                          self.data_class_bwd.train_dl).item())
         # line = self.dataloader.get_train_input().iloc[0]
         # print(self.class_fwd.predict(line['utterance'])[0].obj)
 
@@ -210,45 +171,55 @@ class Experiment(BaseTorchExperimentABC):
         #                                    vocab=self.data_lm.train_ds.vocab,
         #                                    bs=BATCH_SIZE,
         #                                    backwards=True)
-        metrics.validation_accuracy_test_OOV.update(self._get_accuracy(oov_db.valid_dl), 1)
+        metrics.validation_accuracy_test_OOV.update(self._get_accuracy(oov_db.valid_dl).item(), 1)
         metrics.log_metrics()
 
     def _get_accuracy(self, dl):
         dl_bwd = dl_fwd = dl
         valid_pred_fwd, lbl_fwd = self.class_fwd.get_preds(dl_fwd, ordered=True)
+        #print(accuracy_thresh(valid_pred_fwd, lbl_fwd.long(), sigmoid=False))
         valid_pred_bwd, lbl_bwd = self.class_bwd.get_preds(dl_bwd, ordered=True)
+        #print(accuracy_thresh(valid_pred_bwd, lbl_fwd.long(), sigmoid=False))
 
-        valid_pred = (valid_pred_bwd + valid_pred_fwd) / 2 > 0.5
-        return accuracy(valid_pred.long(), lbl_fwd.long())
+        valid_pred = (valid_pred_bwd + valid_pred_fwd) / 2
+        return accuracy_thresh(valid_pred, lbl_fwd.long(), sigmoid=False)
 
+    def _get_master_bar_write_fn(self):
+        def write_fn(line, end=None):
+            if end is not None:
+                print(line, end=end)
+            else:
+                print(end="\r")
+                self.log(line)
+        return write_fn
 
-
-        # print(self.data_class.vocab__dict__)
-        # x = TextList.from_df(dl.get_train_input(), self.experiment_dir, cols='utterance').split_none()
-        # x = x.label_from_df(cols='functions', classes='functions')
-        # print(type(x))
-        # x = DeviceDataLoader.create(x, bs=1)
-        # print(x)
-        # print(next(iter(x)))
-        # print(DeviceDataLoader.create(x, bs=1))
-        # print(self.data_class.__dir__())
-        # print(self.x.validate(x))
-        return MetricContainer()
+    def clean_experiment_dir(self, model_dir):
+        self.log("CLEANING MODEL DIR")
+        shutil.rmtree(model_dir, ignore_errors=True)
 
 
 v = Versions(None, 1, 1)
 
 
-v.add_version("dialogue_babi",
+v.add_version("generated_data_model",
               dataloader=lambda: DataLoader(Datasets(train_dataset_file_path=TRN_DATA_FILE,
                                                      test_dataset_file_path=TST_DATA_FILE,
-                                                     validation_dataset_file_path=None,
-                                                     train_data_load_function=load_dataset,
+                                                     train_data_load_function=LoadDataset(),
                                                      validation_size=0)),
               custom_paramters={
-                  "oov_df": lambda: DataLoader(Datasets(TST_OOV_DATA_FILE,
-                                                        train_data_load_function=load_dataset,
-                                                        test_size=1,
-                                                        validation_size=0)),
+                  "oov_df": lambda: DataLoader(Datasets(
+                      test_dataset_file_path=TST_OOV_DATA_FILE,
+                      test_data_load_function=LoadDataset())),
               })
-EXPERIMENT = Experiment(v, True)
+
+v.add_version("dialog_babi_data_model",
+              dataloader=lambda: DataLoader(Datasets(train_dataset_file_path=TRN_DATA_FILE,
+                                                     test_dataset_file_path=TST_DATA_FILE,
+                                                     train_data_load_function=LoadDataset('dialog_babi'),
+                                                     validation_size=0)),
+              custom_paramters={
+                  "oov_df": lambda: DataLoader(Datasets(
+                      test_dataset_file_path=TST_OOV_DATA_FILE,
+                      test_data_load_function=LoadDataset('dialog_babi'))),
+              })
+EXPERIMENT = Experiment(v, False)
