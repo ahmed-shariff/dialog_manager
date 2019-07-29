@@ -1,11 +1,10 @@
-import itertools
 import os
 import shutil
-import pandas as pd
 from pathlib import Path
 from fastai.text import (TextLMDataBunch,
                          TextDataBunch,
                          load_data,
+                         load_learner,
                          # TextList,
                          # language_model_learner,
                          accuracy_thresh,
@@ -19,8 +18,8 @@ from mlpipeline.entities import ExecutionModeKeys
 from mlpipeline import (Versions,
                         MetricContainer)
 from mlpipeline.utils import Datasets
-from mlpipeline.base import ExperimentABC
-from dataloader import DataLoader, LoadDataset
+from mlpipeline.base import ExperimentABC, DataLoaderABC
+from data_utils import LoadDatasetUtterance
 
 TRN_DATA_FILE = "../data/generated_dataset_trn.json"
 DEV_DATA_FILE = "../data/generated_dataset_dev.json"
@@ -48,6 +47,24 @@ def language_model_learner(data, arch,
     learn.load_pretrained(*fnames)
     learn.freeze()
     return learn
+
+
+class DataLoader(DataLoaderABC):
+    def __init__(self, datasets, **kwargs):
+        super().__init__(**kwargs)
+        self.datasets = datasets
+
+    def get_train_input(self, mode=ExecutionModeKeys.TRAIN, **kargs):
+        return self.datasets.train_dataset
+
+    def get_test_input(self, **kargs):
+        return self.datasets.test_dataset
+
+    def get_validation_input(self, **kwargs):
+        return self.datasets.validation_dataset
+
+    def get_dataloader_summery(self, **kargs):
+        return self.summery
 
 
 class Experiment(ExperimentABC):
@@ -173,6 +190,8 @@ class Experiment(ExperimentABC):
         #                                    backwards=True)
         metrics.validation_accuracy_test_OOV.update(self._get_accuracy(oov_db.valid_dl).item(), 1)
         metrics.log_metrics()
+        self.class_fwd.export('export_fwd.pkl')
+        self.class_bwd.export('export_bwd.pkl')
 
     def _get_accuracy(self, dl):
         dl_bwd = dl_fwd = dl
@@ -204,22 +223,22 @@ v = Versions(None, 1, 1)
 v.add_version("generated_data_model",
               dataloader=lambda: DataLoader(Datasets(train_dataset_file_path=TRN_DATA_FILE,
                                                      test_dataset_file_path=TST_DATA_FILE,
-                                                     train_data_load_function=LoadDataset(),
+                                                     train_data_load_function=LoadDatasetUtterance(),
                                                      validation_size=0)),
               custom_paramters={
                   "oov_df": lambda: DataLoader(Datasets(
                       test_dataset_file_path=TST_OOV_DATA_FILE,
-                      test_data_load_function=LoadDataset())),
+                      test_data_load_function=LoadDatasetUtterance())),
               })
 
 v.add_version("dialog_babi_data_model",
               dataloader=lambda: DataLoader(Datasets(train_dataset_file_path=TRN_DATA_FILE,
                                                      test_dataset_file_path=TST_DATA_FILE,
-                                                     train_data_load_function=LoadDataset('dialog_babi'),
+                                                     train_data_load_function=LoadDatasetUtterance('dialog_babi'),
                                                      validation_size=0)),
               custom_paramters={
                   "oov_df": lambda: DataLoader(Datasets(
                       test_dataset_file_path=TST_OOV_DATA_FILE,
-                      test_data_load_function=LoadDataset('dialog_babi'))),
+                      test_data_load_function=LoadDatasetUtterance('dialog_babi'))),
               })
-EXPERIMENT = Experiment(v, False)
+EXPERIMENT = Experiment(v, True)
