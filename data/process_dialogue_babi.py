@@ -5,15 +5,15 @@ import argparse
 import pandas as pd
 
 pd.set_option("display.max_rows", 100)
-pd.set_option("display.max_colwidth", 100)
+#pd.set_option("display.max_colwidth", 100)
 
 
 class _patterns():
-    first_utterance = re.compile(r".*(book a table|restaurant reservation|have a table).*")
-    cuisine = re.compile(r".*(spanish|british|french|italian|indian|vietnamese|thai|cantonese|korean|japanese).*")
-    count = re.compile(r".*(one|two|three|four|five|six|seven|eight|nine).*")
-    price = re.compile(r".*(cheap|moderate|expensive).*")
-    city = re.compile(r".*(paris|madrid|bombay|london|rome|hanoi|beijing|bangkok|seoul|tokyo).*")
+    first_utterance = re.compile(r".*\b(book a table|restaurant reservation|have a table)\b.*")
+    cuisine = re.compile(r".*\b(spanish|british|french|italian|indian|vietnamese|thai|cantonese|korean|japanese)\b.*")
+    count = re.compile(r".*\b(one|two|three|four|five|six|seven|eight|nine)\b.*")
+    price = re.compile(r".*\b(cheap|moderate|expensive)\b.*")
+    city = re.compile(r".*\b(paris|madrid|bombay|london|rome|hanoi|beijing|bangkok|seoul|tokyo)\b.*")
 
 
 class _functions():
@@ -117,7 +117,7 @@ def _convert_to_json(file_path, out_file_path):
     print(out_file_path)
     with open(out_file_path, "w") as f:
         json.dump(out, f)
-    print(pd.read_json(out_file_path, orient='records'))
+    print(pd.read_json(out_file_path, orient='records')[['utterance', 'response_functions', 'trigger_functions']])
 
 
 if __name__ == '__main__':
