@@ -8,7 +8,8 @@ from fastai.basic_train import load_learner
 from components import (Dialogue_Manager,
                         FunctionResolverBase,
                         Function,
-                        ParamtereExtractionFunctionBase)
+                        ParamtereExtractionFunctionBase,
+                        DialogueProcessingException)
 from data_utils import LoadDatasetDialogue, get_functions_from_utterance
 from dialogue_manager_test import TestFunctionResolver, get_function_index
 
@@ -34,13 +35,14 @@ function_groups_generated += function_groups_dialog_babi
 
 
 class Model:
-    def __init__(self, root_model_path, fwd_model_file_name, bwd_model_file_name, function_groups):
-        root_model_path = "outputs/experiment_ckpts/ulmfit-dialog_babi_data_model"
-        self.fwd_model = load_learner(root_model_path, 'export_fwd.pkl')
-        self.bwd_model = load_learner(root_model_path, 'export_bwd.pkl')
+    def __init__(self, root_model_path, fwd_model_file_name, bwd_model_file_name, function_groups, threshold=0.3):
+        # root_model_path = "outputs/experiment_ckpts/ulmfit-dialog_babi_data_model"
+        self.fwd_model = load_learner(root_model_path, fwd_model_file_name)
+        self.bwd_model = load_learner(root_model_path, bwd_model_file_name)
         self.ds = self.fwd_model.data.single_ds.y
         self.trigger_functions = []
         self.response_functions = [templates.functions.root_concern]
+        self.threshold = threshold
         for func in function_groups:
             self.trigger_functions.append(func[0])
             self.response_functions.extend(func[1])
@@ -49,7 +51,7 @@ class Model:
         fwd_pred = self.fwd_model.predict(utterance)
         bwd_pred = self.bwd_model.predict(utterance)
         pred = (fwd_pred[2] + bwd_pred[2]) / 2
-        analyze_pred = self.ds.analyze_pred(pred, 0.1)
+        analyze_pred = self.ds.analyze_pred(pred, self.threshold)
         output_pred = pred[analyze_pred > 0].tolist()
         output_class = self.ds.reconstruct(analyze_pred).obj
         return zip(output_class, output_pred)
@@ -71,7 +73,9 @@ class DataLoader(DataLoaderABC):
     def __init__(self, test_file_path, test_oov_file_path, from_filter=None):
         load_data_fn = LoadDatasetDialogue(from_filter)
         self.test_data = load_data_fn(test_file_path)
+        self.log(f"Loaded: {test_file_path}")
         self.test_oov_data = load_data_fn(test_oov_file_path)
+        self.log(f"Loaded: {test_oov_file_path}")
 
     def get_test_input(self):
         return self.test_data, self.test_oov_data
@@ -95,47 +99,88 @@ class Experiment(ExperimentABC):
         test_data, test_oov_data = input_fn
         # print(*test_data, *test_oov_data, sep='\n')
         self.log("Testing on test_data")
-        for data in iterator(tqdm(test_data), 5):
+        for data in iterator(tqdm(test_data), 50):
             output = self._evaluate_dialogue(*data)
             metricContainer.test_accuracy.update(int(output), 1)
         self.log("Testing on test_data_oov")
-        for data in iterator(tqdm(test_oov_data), 5):
+        for data in iterator(tqdm(test_oov_data), 50):
             output = self._evaluate_dialogue(*data)
             metricContainer.test_oov_accuracy.update(int(output), 1)
         return metricContainer
 
     def _evaluate_dialogue(self, dialogue, function_map):
+        self.dm.reset_context()
+        self.dm.get_next_system_concern()
         completed_functions = []
         next_func = templates.functions.root_concern
+        outed = []
+        asked = []
         while next_func is not None:
+            asked.append(next_func)
             utterance = dialogue.loc[function_map[next_func]]
+            outed.append(utterance['utterance'])
             functions = get_functions_from_utterance(utterance)
             if len([f for f in functions if f in completed_functions]) != 0:
+                # print(completed_functions, functions)
+                # print(outed, sep="\n")
+                # print(asked)
+                # print(1, *self.dm.context.contexts, sep="\n")
                 return False
             completed_functions.extend(functions)
-            self.dm.process_user_utterance(utterance['utterance'])
+            try:
+                self.dm.process_user_utterance(utterance['utterance'])
+            except DialogueProcessingException:
+                # print(utterance['utterance'], functions)
+                return False
             next_func = self.dm.get_next_system_concern()
-            # print(utterance, functions, next_func, next_func is not None, "\n\n")
         # If there are any functions in the function_map not in the completed_functions
         # the dialogue failed
         if len([f for f in function_map.keys() if f not in completed_functions]) != 0:
+            # print(2, *self.dm.context.contexts, sep="\n")
             return False
         return True
 
 
 v = Versions(None, 1, 1)
-
-v.add_version('temp',
+templates.print_function_output = False
+# v.add_version('temp',
+#               dataloader=DataLoaderCallableWrapper(DataLoader,
+#                                                    test_file_path=TST_DATA_FILE,
+#                                                    test_oov_file_path=TST_OOV_DATA_FILE,
+#                                                    from_filter='dialog_babi'),
+#               custom_paramters={
+#                   'root_model_path': "outputs/experiment_ckpts/ulmfit-generated_data_model",
+#                   # 'root_model_path': "outputs/experiment_ckpts/ulmfit-generated_data_model",
+#                   'functions': [templates.order_taxi, templates.book_room,
+#                                 templates.book_ticket, templates.book_table],
+#                   'function_groups': function_groups_generated
+#                   })
+v.add_version('generated data set',
+              order=1,
               dataloader=DataLoaderCallableWrapper(DataLoader,
-                                                   test_file_path=TRN_DATA_FILE,
-                                                   test_oov_file_path=DEV_DATA_FILE,
-                                                   from_filter='dialog_babi'),
+                                                   test_file_path=TST_DATA_FILE,
+                                                   test_oov_file_path=TST_OOV_DATA_FILE,
+                                                   from_filter=None),
               custom_paramters={
                   'root_model_path': "outputs/experiment_ckpts/ulmfit-generated_data_model",
                   # 'root_model_path': "outputs/experiment_ckpts/ulmfit-generated_data_model",
                   'functions': [templates.order_taxi, templates.book_room,
                                 templates.book_ticket, templates.book_table],
                   'function_groups': function_groups_generated
+                  })
+
+
+v.add_version('babi data set',
+              order=0,
+              dataloader=DataLoaderCallableWrapper(DataLoader,
+                                                   test_file_path=TST_DATA_FILE,
+                                                   test_oov_file_path=TST_OOV_DATA_FILE,
+                                                   from_filter='dialog_babi'),
+              custom_paramters={
+                  'root_model_path': "outputs/experiment_ckpts/ulmfit-dialog_babi_data_model",
+                  # 'root_model_path': "outputs/experiment_ckpts/ulmfit-generated_data_model",
+                  'functions': [templates.book_table],
+                  'function_groups': function_groups_dialog_babi
                   })
 
 

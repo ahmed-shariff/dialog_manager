@@ -1,30 +1,36 @@
 from easydict import EasyDict
 
+print_function_output = True
+
 
 def order_taxi(location):
     if location is not None:
-        print(f"ordered taxi to {location}")
+        if print_function_output:
+            print(f"ordered taxi to {location}")
         return True
     return False
 
 
 def book_room(number, nights, price, city):
     if all([i is not None for i in [number, nights, price, city]]):
-        print(f"Booked room for {number} for {nights} nights in a {price} price-range in {city}")
+        if print_function_output:
+            print(f"Booked room for {number} for {nights} nights in a {price} price-range in {city}")
         return True
     return False
 
 
 def book_ticket(number, departure, to, price):
     if all([i is not None for i in [number, departure, to, price]]):
-        print(f"Booked {number} tickets from {departure} to {to} in a {price} price-range")
+        if print_function_output:
+            print(f"Booked {number} tickets from {departure} to {to} in a {price} price-range")
         return True
     return False
 
 
 def book_table(cuisine, city, count, price):
     if all([i is not None for i in [cuisine, city, count, price]]):
-        print(f"Booked {count} tables in a restaurant with cousine {cuisine} in {city} in a {price} price-range")
+        if print_function_output:
+            print(f"Booked {count} tables in a restaurant with cousine {cuisine} in {city} in a {price} price-range")
         return True
     return False
 

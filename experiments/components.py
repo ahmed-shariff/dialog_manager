@@ -73,16 +73,19 @@ class ContextObject():
 
 class Context():
     def __init__(self, function_index, function_resolver):
+        self._function_index = function_index
+        self._function_resolver = function_resolver
+        self.reset_context()
+
+    def reset_context(self):
         self._all_system_concerns_id_map = {}  # name:id map
         self._root = self._create_context_object("root_concern",
                                                  0,
                                                  ContextObjectTypes.SYSTEM_CONCERN,
                                                  Function("root_concern", lambda: None, True))
         self._current_id = 1
-        self._function_index = function_index
-        self._function_resolver = function_resolver
 
-    def get_active_concerns(self, additional_context=[]):
+    def get_active_concerns(self, additional_context=None):
         '''
         Traverses throught the tree and list all the unresolved concerns.
         '''
@@ -99,10 +102,11 @@ class Context():
             if len(concerns) == 0:
                 return active_concerns
             return _get_active_concerns(concerns[0], concerns[1:], active_concerns, visited_ids)
+        if additional_context is None:
+            additional_context = []
         return _get_active_concerns(self._root, additional_context, {}, [])
 
     def add_user_context_object(self, utterance, response_functions, trigger_functions):
-        active_concerns = self.get_active_concerns()
         context_object = self._create_context_object(
             utterance,
             self._get_id(),
@@ -229,6 +233,8 @@ class Dialogue_Manager():
         self.context = Context(function_index, function_resolver)
         self.response_function_model = response_function_model
         self.trigger_function_model = trigger_function_model
+        self.function_index = function_index
+        self.function_resolver = function_resolver
 
     def process_user_utterance(self, utterance):
         # Get the predicted response and trigger functions
@@ -272,6 +278,9 @@ class Dialogue_Manager():
             return active_concerns[0][1].name
         except IndexError:
             return None
+
+    def reset_context(self):
+        self.context.reset_context()
 
 
 class DialogueProcessingException(Exception):
