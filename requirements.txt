@@ -1,0 +1,6 @@
+pandas
+fastai
+mlflow
+mlpipeline
+numpy
+fastprogress
