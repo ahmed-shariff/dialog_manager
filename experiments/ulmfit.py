@@ -1,5 +1,6 @@
 import os
 import shutil
+import torch
 from pathlib import Path
 from fastai.text import (TextLMDataBunch,
                          TextDataBunch,
@@ -201,7 +202,10 @@ class Experiment(ExperimentABC):
         #print(accuracy_thresh(valid_pred_bwd, lbl_fwd.long(), sigmoid=False))
 
         valid_pred = (valid_pred_bwd + valid_pred_fwd) / 2
-        return accuracy_thresh(valid_pred, lbl_fwd.long(), sigmoid=False)
+        pred = valid_pred > 0.5
+        pred = (pred == lbl_fwd.byte()).sum(1)
+        pred = (pred == valid_pred.size(1)).float().mean()
+        return pred
 
     def _get_master_bar_write_fn(self):
         def write_fn(line, end=None):
@@ -241,4 +245,4 @@ v.add_version("dialog_babi_data_model",
                       test_dataset_file_path=TST_OOV_DATA_FILE,
                       test_data_load_function=LoadDatasetUtterance('dialog_babi'))),
               })
-EXPERIMENT = Experiment(v, True)
+EXPERIMENT = Experiment(v, False)

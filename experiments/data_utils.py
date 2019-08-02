@@ -33,24 +33,26 @@ class LoadDatasetDialogue:
         self.from_filter = from_filter
 
     def __call__(self, file_path):
-        df = _load_data_to_pd(file_path)
+        self.df = _load_data_to_pd(file_path)
         if self.from_filter is not None:
-            df = df[df['dataset'] == self.from_filter]
-        dialogue_ids = df['dialogue_id'].unique()
+            self.df = self.df[self.df['dataset'] == self.from_filter]
+        dialogue_ids = self.df['dialogue_id'].unique()
         dialogues = []
         for dialogue_id in iterator(tqdm(dialogue_ids, "Loading dialogues: "), 20):
-            function_map = {}
-            dialogue_df = df[df['dialogue_id'] == dialogue_id]
-            dialogue_df = dialogue_df[~dialogue_df['reply_to'].isna()]
-            dialogue_df = dialogue_df.set_index('turn_id')
-            for idx, utterance in dialogue_df[dialogue_df['by'] == 'user'].iterrows():
-                functions = get_functions_from_utterance(utterance)
-                for function in functions:
-                    assert function not in function_map
-                    function_map[function] = idx
-            dialogues.append((dialogue_df, function_map))
+            dialogues.append(self._process_dialogue(dialogue_id))
         return dialogues
 
+    def _process_dialogue(self, dialogue_id):
+        function_map = {}
+        dialogue_df = self.df[self.df['dialogue_id'] == dialogue_id]
+        dialogue_df = dialogue_df[~dialogue_df['reply_to'].isna()]
+        dialogue_df = dialogue_df.set_index('turn_id')
+        for idx, utterance in dialogue_df[dialogue_df['by'] == 'user'].iterrows():
+            functions = get_functions_from_utterance(utterance)
+            for function in functions:
+                assert function not in function_map
+                function_map[function] = idx
+        return (dialogue_df, function_map)
 
 def get_functions_from_utterance(utterance):
     functions = utterance[['response_functions', 'trigger_functions']].dropna()
