@@ -176,18 +176,7 @@ class Experiment(ExperimentABC):
 
 v = Versions(None, 1, 1)
 templates.print_function_output = False
-# v.add_version('temp',
-#               dataloader=DataLoaderCallableWrapper(DataLoader,
-#                                                    test_file_path=TST_DATA_FILE,
-#                                                    test_oov_file_path=TST_OOV_DATA_FILE,
-#                                                    from_filter='dialog_babi'),
-#               custom_paramters={
-#                   'root_model_path': "outputs/experiment_ckpts/ulmfit-generated_data_model",
-#                   # 'root_model_path': "outputs/experiment_ckpts/ulmfit-generated_data_model",
-#                   'functions': [templates.order_taxi, templates.book_room,
-#                                 templates.book_ticket, templates.book_table],
-#                   'function_groups': function_groups_generated
-#                   })
+
 v.add_version('generated data set',
               order=1,
               dataloader=DataLoaderCallableWrapper(DataLoader,
