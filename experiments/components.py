@@ -257,7 +257,7 @@ class Dialogue_Manager():
         # Assumes the return value of the trigger_functions_model is a dictionaty
         # with the names of the functions it thinks are trigger functions and their
         # respective scores
-        return [n for n, p in trigger_functions.items()]
+        return [n for n, p in trigger_functions.items() if n not in 'None']
 
     def _get_response_function(self, utterance):
         '''
