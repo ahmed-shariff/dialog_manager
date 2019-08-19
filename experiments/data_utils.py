@@ -37,15 +37,14 @@ class LoadDatasetUtterance:
                                                                      get_list(row['response_functions'])))
                                                 for _, row in df.iterrows()], index=df.index)
             df = df.loc[:, ['utterance', 'functions']]
-            used_labels = df['functions']
         elif self.function_set == self.TRIGGER_FUNCTIONS:
             df = df.loc[:, ['utterance', 'trigger_functions']].rename(
                 columns={'trigger_functions': 'functions'})
-            used_labels = df['functions']
+            df['functions'] = df['functions'].apply(lambda x: ['None'] if x is None else x)
         elif self.function_set == self.RESPONSE_FUNCTIONS:
             df = df.loc[:, ['utterance', 'response_functions']].rename(
                 columns={'response_functions': 'functions'})
-            used_labels = df['functions']
+        used_labels = df['functions']
         return df, set(list(itertools.chain(*used_labels[~used_labels.isnull()].to_list())))
 
 
