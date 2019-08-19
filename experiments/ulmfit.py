@@ -27,9 +27,9 @@ DEV_DATA_FILE = "../data/generated_dataset_dev.json"
 TST_DATA_FILE = "../data/generated_dataset_tst.json"
 TST_OOV_DATA_FILE = "../data/generated_dataset_tst-OOV.json"
 
-BATCH_SIZE = 8  # 256/16
+BATCH_SIZE = 16  # 256/16
 LR_DIV_FACTOR = 256/BATCH_SIZE
-BPTT = 70
+BPTT = 80
 PRE_TRAINED_FILES = Path("pretrained_models/")
 
 
@@ -128,9 +128,9 @@ class Experiment(ExperimentABC):
         except FileNotFoundError:
             self.log(f'Training encoder `{encoder_name}`')
             learn = learn.to_fp16(clip=0.1)
-            learn.fit_one_cycle(5, 2e-2/LR_DIV_FACTOR, moms=(0.8, 0.7), wd=0.1)
+            learn.fit_one_cycle(1, 2e-2/LR_DIV_FACTOR, moms=(0.8, 0.7), wd=0.1)
             learn.unfreeze()
-            learn.fit_one_cycle(50, 2e-3/LR_DIV_FACTOR, moms=(0.8, 0.7), wd=0.1)
+            learn.fit_one_cycle(10, 2e-3/LR_DIV_FACTOR, moms=(0.8, 0.7), wd=0.1)
             self.log(f"Saving encoder `{encoder_name}`")
             learn.save_encoder(encoder_name)
 
@@ -145,22 +145,22 @@ class Experiment(ExperimentABC):
             self.log(f'Training classifier `{classifier_name}`')
             learn.load_encoder(encoder_name)
             lr = 1e-1/LR_DIV_FACTOR
-            learn.fit_one_cycle(3, lr, moms=(0.8, 0.7))
+            learn.fit_one_cycle(1, lr, moms=(0.8, 0.7))
 
             # TODO remove
             # learn.save(classifier_name)
             # return learn
             learn.freeze_to(-2)
             lr /= 2
-            learn.fit_one_cycle(3, slice(lr/(2.6**4), lr), moms=(0.8, 0.7))
+            learn.fit_one_cycle(1, slice(lr/(2.6**4), lr), moms=(0.8, 0.7))
 
             learn.freeze_to(-3)
             lr /= 2
-            learn.fit_one_cycle(3, slice(lr/(2.6**4), lr), moms=(0.8, 0.7))
+            learn.fit_one_cycle(1, slice(lr/(2.6**4), lr), moms=(0.8, 0.7))
 
             learn.unfreeze()
             lr /= 5
-            learn.fit_one_cycle(6, slice(lr/(2.6**4), lr), moms=(0.8, 0.7))
+            learn.fit_one_cycle(2, slice(lr/(2.6**4), lr), moms=(0.8, 0.7))
             self.log(f"Saving classifier `{classifier_name}`")
             learn.save(classifier_name)
         return learn
@@ -225,24 +225,29 @@ v = Versions(None, 1, 1)
 
 
 v.add_version("generated_data_model",
-              dataloader=lambda: DataLoader(Datasets(train_dataset_file_path=TRN_DATA_FILE,
-                                                     test_dataset_file_path=TST_DATA_FILE,
-                                                     train_data_load_function=LoadDatasetUtterance(),
-                                                     validation_size=0)),
+              dataloader=lambda: DataLoader(Datasets(
+                  train_dataset_file_path=TRN_DATA_FILE,
+                  test_dataset_file_path=TST_DATA_FILE,
+                  train_data_load_function=LoadDatasetUtterance(LoadDatasetUtterance.COMBINED_FUNCTIONS),
+                  validation_size=0)),
               custom_paramters={
                   "oov_df": lambda: DataLoader(Datasets(
                       test_dataset_file_path=TST_OOV_DATA_FILE,
-                      test_data_load_function=LoadDatasetUtterance())),
+                      test_data_load_function=LoadDatasetUtterance(LoadDatasetUtterance.COMBINED_FUNCTIONS))),
               })
 
 v.add_version("dialog_babi_data_model",
-              dataloader=lambda: DataLoader(Datasets(train_dataset_file_path=TRN_DATA_FILE,
-                                                     test_dataset_file_path=TST_DATA_FILE,
-                                                     train_data_load_function=LoadDatasetUtterance('dialog_babi'),
-                                                     validation_size=0)),
+              dataloader=lambda: DataLoader(Datasets(
+                  train_dataset_file_path=TRN_DATA_FILE,
+                  test_dataset_file_path=TST_DATA_FILE,
+                  train_data_load_function=LoadDatasetUtterance(LoadDatasetUtterance.COMBINED_FUNCTIONS,
+                                                                'book_table'),
+                  validation_size=0)),
               custom_paramters={
                   "oov_df": lambda: DataLoader(Datasets(
                       test_dataset_file_path=TST_OOV_DATA_FILE,
-                      test_data_load_function=LoadDatasetUtterance('dialog_babi'))),
+                      test_data_load_function=LoadDatasetUtterance(LoadDatasetUtterance.COMBINED_FUNCTIONS,
+                                                                   'book_table'))),
               })
-EXPERIMENT = Experiment(v, False)
+v.filter_versions(whitelist_versions=["dialog_babi_data_model"])
+EXPERIMENT = Experiment(v, True)
