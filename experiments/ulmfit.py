@@ -224,7 +224,8 @@ class Experiment(ExperimentABC):
 v = Versions(None, 1, 1)
 
 
-v.add_version("generated_data_model",
+# Combined data
+v.add_version("complete_combined_data_model",
               dataloader=lambda: DataLoader(Datasets(
                   train_dataset_file_path=TRN_DATA_FILE,
                   test_dataset_file_path=TST_DATA_FILE,
@@ -236,7 +237,7 @@ v.add_version("generated_data_model",
                       test_data_load_function=LoadDatasetUtterance(LoadDatasetUtterance.COMBINED_FUNCTIONS))),
               })
 
-v.add_version("dialog_babi_data_model",
+v.add_version("book_table_combined_data_model",
               dataloader=lambda: DataLoader(Datasets(
                   train_dataset_file_path=TRN_DATA_FILE,
                   test_dataset_file_path=TST_DATA_FILE,
@@ -249,5 +250,187 @@ v.add_version("dialog_babi_data_model",
                       test_data_load_function=LoadDatasetUtterance(LoadDatasetUtterance.COMBINED_FUNCTIONS,
                                                                    'book_table'))),
               })
-v.filter_versions(whitelist_versions=["dialog_babi_data_model"])
+
+v.add_version("book_room_combined_data_model",
+              dataloader=lambda: DataLoader(Datasets(
+                  train_dataset_file_path=TRN_DATA_FILE,
+                  test_dataset_file_path=TST_DATA_FILE,
+                  train_data_load_function=LoadDatasetUtterance(LoadDatasetUtterance.COMBINED_FUNCTIONS,
+                                                                'book_room'),
+                  validation_size=0)),
+              custom_paramters={
+                  "oov_df": lambda: DataLoader(Datasets(
+                      test_dataset_file_path=TST_OOV_DATA_FILE,
+                      test_data_load_function=LoadDatasetUtterance(LoadDatasetUtterance.COMBINED_FUNCTIONS,
+                                                                   'book_room'))),
+              })
+
+v.add_version("order_taxi_combined_data_model",
+              dataloader=lambda: DataLoader(Datasets(
+                  train_dataset_file_path=TRN_DATA_FILE,
+                  test_dataset_file_path=TST_DATA_FILE,
+                  train_data_load_function=LoadDatasetUtterance(LoadDatasetUtterance.COMBINED_FUNCTIONS,
+                                                                'order_taxi'),
+                  validation_size=0)),
+              custom_paramters={
+                  "oov_df": lambda: DataLoader(Datasets(
+                      test_dataset_file_path=TST_OOV_DATA_FILE,
+                      test_data_load_function=LoadDatasetUtterance(LoadDatasetUtterance.COMBINED_FUNCTIONS,
+                                                                   'order_taxi'))),
+              })
+
+v.add_version("book_ticket_combined_data_model",
+              dataloader=lambda: DataLoader(Datasets(
+                  train_dataset_file_path=TRN_DATA_FILE,
+                  test_dataset_file_path=TST_DATA_FILE,
+                  train_data_load_function=LoadDatasetUtterance(LoadDatasetUtterance.COMBINED_FUNCTIONS,
+                                                                'book_ticket'),
+                  validation_size=0)),
+              custom_paramters={
+                  "oov_df": lambda: DataLoader(Datasets(
+                      test_dataset_file_path=TST_OOV_DATA_FILE,
+                      test_data_load_function=LoadDatasetUtterance(LoadDatasetUtterance.COMBINED_FUNCTIONS,
+                                                                   'book_ticket'))),
+              })
+
+# response data
+v.add_version("complete_response_data_model",
+              dataloader=lambda: DataLoader(Datasets(
+                  train_dataset_file_path=TRN_DATA_FILE,
+                  test_dataset_file_path=TST_DATA_FILE,
+                  train_data_load_function=LoadDatasetUtterance(LoadDatasetUtterance.RESPONSE_FUNCTIONS),
+                  validation_size=0)),
+              custom_paramters={
+                  "oov_df": lambda: DataLoader(Datasets(
+                      test_dataset_file_path=TST_OOV_DATA_FILE,
+                      test_data_load_function=LoadDatasetUtterance(LoadDatasetUtterance.RESPONSE_FUNCTIONS))),
+              })
+
+v.add_version("book_table_response_data_model",
+              dataloader=lambda: DataLoader(Datasets(
+                  train_dataset_file_path=TRN_DATA_FILE,
+                  test_dataset_file_path=TST_DATA_FILE,
+                  train_data_load_function=LoadDatasetUtterance(LoadDatasetUtterance.RESPONSE_FUNCTIONS,
+                                                                'book_table'),
+                  validation_size=0)),
+              custom_paramters={
+                  "oov_df": lambda: DataLoader(Datasets(
+                      test_dataset_file_path=TST_OOV_DATA_FILE,
+                      test_data_load_function=LoadDatasetUtterance(LoadDatasetUtterance.RESPONSE_FUNCTIONS,
+                                                                   'book_table'))),
+              })
+
+v.add_version("book_room_response_data_model",
+              dataloader=lambda: DataLoader(Datasets(
+                  train_dataset_file_path=TRN_DATA_FILE,
+                  test_dataset_file_path=TST_DATA_FILE,
+                  train_data_load_function=LoadDatasetUtterance(LoadDatasetUtterance.RESPONSE_FUNCTIONS,
+                                                                'book_room'),
+                  validation_size=0)),
+              custom_paramters={
+                  "oov_df": lambda: DataLoader(Datasets(
+                      test_dataset_file_path=TST_OOV_DATA_FILE,
+                      test_data_load_function=LoadDatasetUtterance(LoadDatasetUtterance.RESPONSE_FUNCTIONS,
+                                                                   'book_room'))),
+              })
+
+v.add_version("order_taxi_response_data_model",
+              dataloader=lambda: DataLoader(Datasets(
+                  train_dataset_file_path=TRN_DATA_FILE,
+                  test_dataset_file_path=TST_DATA_FILE,
+                  train_data_load_function=LoadDatasetUtterance(LoadDatasetUtterance.RESPONSE_FUNCTIONS,
+                                                                'order_taxi'),
+                  validation_size=0)),
+              custom_paramters={
+                  "oov_df": lambda: DataLoader(Datasets(
+                      test_dataset_file_path=TST_OOV_DATA_FILE,
+                      test_data_load_function=LoadDatasetUtterance(LoadDatasetUtterance.RESPONSE_FUNCTIONS,
+                                                                   'order_taxi'))),
+              })
+
+v.add_version("book_ticket_response_data_model",
+              dataloader=lambda: DataLoader(Datasets(
+                  train_dataset_file_path=TRN_DATA_FILE,
+                  test_dataset_file_path=TST_DATA_FILE,
+                  train_data_load_function=LoadDatasetUtterance(LoadDatasetUtterance.RESPONSE_FUNCTIONS,
+                                                                'book_ticket'),
+                  validation_size=0)),
+              custom_paramters={
+                  "oov_df": lambda: DataLoader(Datasets(
+                      test_dataset_file_path=TST_OOV_DATA_FILE,
+                      test_data_load_function=LoadDatasetUtterance(LoadDatasetUtterance.RESPONSE_FUNCTIONS,
+                                                                   'book_ticket'))),
+              })
+
+# trigger data
+v.add_version("complete_trigger_data_model",
+              dataloader=lambda: DataLoader(Datasets(
+                  train_dataset_file_path=TRN_DATA_FILE,
+                  test_dataset_file_path=TST_DATA_FILE,
+                  train_data_load_function=LoadDatasetUtterance(LoadDatasetUtterance.TRIGGER_FUNCTIONS),
+                  validation_size=0)),
+              custom_paramters={
+                  "oov_df": lambda: DataLoader(Datasets(
+                      test_dataset_file_path=TST_OOV_DATA_FILE,
+                      test_data_load_function=LoadDatasetUtterance(LoadDatasetUtterance.TRIGGER_FUNCTIONS))),
+              })
+
+v.add_version("book_table_trigger_data_model",
+              dataloader=lambda: DataLoader(Datasets(
+                  train_dataset_file_path=TRN_DATA_FILE,
+                  test_dataset_file_path=TST_DATA_FILE,
+                  train_data_load_function=LoadDatasetUtterance(LoadDatasetUtterance.TRIGGER_FUNCTIONS,
+                                                                'book_table'),
+                  validation_size=0)),
+              custom_paramters={
+                  "oov_df": lambda: DataLoader(Datasets(
+                      test_dataset_file_path=TST_OOV_DATA_FILE,
+                      test_data_load_function=LoadDatasetUtterance(LoadDatasetUtterance.TRIGGER_FUNCTIONS,
+                                                                   'book_table'))),
+              })
+
+v.add_version("book_room_trigger_data_model",
+              dataloader=lambda: DataLoader(Datasets(
+                  train_dataset_file_path=TRN_DATA_FILE,
+                  test_dataset_file_path=TST_DATA_FILE,
+                  train_data_load_function=LoadDatasetUtterance(LoadDatasetUtterance.TRIGGER_FUNCTIONS,
+                                                                'book_room'),
+                  validation_size=0)),
+              custom_paramters={
+                  "oov_df": lambda: DataLoader(Datasets(
+                      test_dataset_file_path=TST_OOV_DATA_FILE,
+                      test_data_load_function=LoadDatasetUtterance(LoadDatasetUtterance.TRIGGER_FUNCTIONS,
+                                                                   'book_room'))),
+              })
+
+v.add_version("order_taxi_trigger_data_model",
+              dataloader=lambda: DataLoader(Datasets(
+                  train_dataset_file_path=TRN_DATA_FILE,
+                  test_dataset_file_path=TST_DATA_FILE,
+                  train_data_load_function=LoadDatasetUtterance(LoadDatasetUtterance.TRIGGER_FUNCTIONS,
+                                                                'order_taxi'),
+                  validation_size=0)),
+              custom_paramters={
+                  "oov_df": lambda: DataLoader(Datasets(
+                      test_dataset_file_path=TST_OOV_DATA_FILE,
+                      test_data_load_function=LoadDatasetUtterance(LoadDatasetUtterance.TRIGGER_FUNCTIONS,
+                                                                   'order_taxi'))),
+              })
+
+v.add_version("book_ticket_trigger_data_model",
+              dataloader=lambda: DataLoader(Datasets(
+                  train_dataset_file_path=TRN_DATA_FILE,
+                  test_dataset_file_path=TST_DATA_FILE,
+                  train_data_load_function=LoadDatasetUtterance(LoadDatasetUtterance.TRIGGER_FUNCTIONS,
+                                                                'book_ticket'),
+                  validation_size=0)),
+              custom_paramters={
+                  "oov_df": lambda: DataLoader(Datasets(
+                      test_dataset_file_path=TST_OOV_DATA_FILE,
+                      test_data_load_function=LoadDatasetUtterance(LoadDatasetUtterance.TRIGGER_FUNCTIONS,
+                                                                   'book_ticket'))),
+              })
+
+
+# v.filter_versions(whitelist_versions=["order_taxi_combined_data_model"])
 EXPERIMENT = Experiment(v, True)
